@@ -156,3 +156,48 @@ def gen_outliers(letter):
         # Update the seen indices and new indices for the next iteration
         seen_idxs.update(next_indices)
         new_indices = next_indices  # Set new_indices for the next loop
+
+
+#
+# #Iteratively adds and checks ordinals, for non-monotonic examples, such as 't is the twelfth, seventh letter' (->)
+# def verifier(letter, indices, forward=True):
+#     s = (letter + BASE_START).replace(" ", "") if forward else BASE_END.replace(" ", "")[::-1]
+#     for idx in indices:
+#         s += (n2w(idx) if forward else n2w(idx)[::-1])
+#         try:
+#             # Find the next occurrence of the letter
+#             if s[idx-1] != letter:
+#                 return False
+#         except IndexError:
+#             # Inherently false
+#             return False
+#         # Adjust the sequence for the next iteration
+#     return True
+#
+#
+# # This should be used for monotonic sequences- more space efficient. Otherwise this should be put inside the other one,
+# # where the other one builds the string iteratively in entirety
+# def verifier_monotonic(letter, indices, forward=True):
+#     #problem- what if receive a generator?
+#     # if len(indices)>1:
+#     #     #check if monotonically increasing
+#     #     if not all(indices[i] <= indices[i+1] for i in range(len(indices) - 1)):
+#     #         print('Use general verifier method')
+#     #         return None
+#
+#     s = (letter + BASE_START).replace(" ", "") if forward else BASE_END.replace(" ", "")[::-1]
+#     prev_idx = 0
+#     for idx in indices:
+#         idx_rel = idx - prev_idx
+#         s += (n2w(idx) if forward else n2w(idx)[::-1])
+#         try:
+#             # Find the next occurrence of the letter
+#             if s[idx_rel - 1] != letter:
+#                 return False
+#         except IndexError:
+#             #Inherently false
+#             return False
+#         s = s[idx_rel:]
+#         prev_idx = idx
+#         # Adjust the sequence for the next iteration
+#     return True

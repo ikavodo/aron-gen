@@ -128,8 +128,10 @@ if __name__ == '__main__':
     # print(str(aron_helper.verifier('l', indices=[1,14], forward=True,is_outlier=True)))
     # test_sequence()
     letter = 't'
+    num_ind = 5
     for inp in [[],[1,11],[10,12]]:
         #notice second and third converge
-        aron_helper.print_sequence(letter, inp + list(islice(aron_helper.agen_better(letter, forward=True, inp=inp), 10)))
+        series = inp + list(islice(aron_helper.agen_better(letter, forward=True, inp=inp), num_ind))
+        aron_helper.print_sequence(letter, series)
     # print(str(verifier_combined(letter,[12,7],True)))
     # Generate indices up to 2**1016

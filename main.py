@@ -35,7 +35,11 @@ if __name__ == '__main__':
     letter = 't'
     # [print(seq) for seq in aron_helper.generate_variations(n, letter, False)
     #        if seq not in seen and not seen.append(seq)]
-    print(aron_helper.intersect_aronson_sets(n, letter))
+    seqs = aron_helper.intersect_aronson_sets(letter, n)
+    for seq in seqs:
+        assert(aron_helper.verifier(letter, seq, True))
+        assert (aron_helper.verifier(letter, seq, False))
+
 
     assert (aron_helper.verifier('t', [18, 8], forward=False, forward_referring=True))
     assert (aron_helper.verifier('l', indices=[1, 23], forward=True, forward_referring=True))

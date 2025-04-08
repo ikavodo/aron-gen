@@ -42,7 +42,7 @@ def n2w(n):
 
 
 # Helper- generates sequence from generator and input
-def aronson(n, letter, forward=True, inp=None, forward_referring=False):
+def aronson(letter, n, forward=True, inp=None, forward_referring=False):
     # generates 'the rest' from input
     if inp is None:
         seq = list(islice(agen_better(letter, forward=forward), n))
@@ -100,7 +100,7 @@ def verifier_slow(letter, indices, forward=True):
 
 
 def test_verifiers(letter, n, forward, *verifiers):
-    seq = aronson(n, letter)
+    seq = aronson(letter, n)
     execution_times = {}
 
     # Loop over verifiers
@@ -126,8 +126,8 @@ def test_verifiers(letter, n, forward, *verifiers):
         avg_time = sum(times) / n
         print(f"Average execution time for {verifier_name}: {avg_time:.4f} seconds")
 
-
-def verifier(letter, indices, forward=True, forward_referring=False):
+#Use slow verifier for debugging
+def verifier(letter, indices, forward=True, forward_referring=True):
     if forward_referring:
         return verifier_slow(letter, indices, forward)
     else:
@@ -167,9 +167,9 @@ def print_sequence(letter, indices, forward=True):
     print(get_sequence(letter, indices, forward, True))
 
 
-def generate_variations(n, letter, forward=True, inp=None):
+def generate_variations(letter, n, forward=True, inp=None):
     # where to start generating variations from
-    orig = aronson(n, letter, forward, inp)
+    orig = aronson(letter, n, forward, inp)
     start_idx = -1
     stack = [(orig, start_idx)]
     while stack:
@@ -181,7 +181,7 @@ def generate_variations(n, letter, forward=True, inp=None):
             # important: keep track of which index was used to generate the current sequence
             inp = cur[:idx] + [cur[idx + 1]]
             try:
-                extend = aronson(n, letter, forward, inp)
+                extend = aronson(letter, n, forward, inp)
             except VerifierError:
                 # verifier returned false- meaning sequence is incorrect and can't be extended
                 continue
@@ -191,15 +191,15 @@ def generate_variations(n, letter, forward=True, inp=None):
 from itertools import chain, combinations
 from functools import reduce
 
-def intersect_aronson_sets(n, letter):
+def intersect_aronson_sets(letter, n):
     def power_set(seq):
         return set(chain.from_iterable(combinations(seq, r) for r in range(len(seq) + 1)))
 
     # Initialize sets to accumulate power sets for both directions
     power_sets = [set(), set()]
     # Create generators for both directions
-    gen_forward = generate_variations(n, letter, True)
-    gen_backward = generate_variations(n, letter, False)
+    gen_forward = generate_variations(letter, n, True)
+    gen_backward = generate_variations(letter, n, False)
     for seq_fwd, seq_bwd in zip(gen_forward, gen_backward):
         power_sets[0].update(power_set(seq_fwd))
         power_sets[1].update(power_set(seq_bwd))
@@ -207,7 +207,8 @@ def intersect_aronson_sets(n, letter):
     # Compute intersection of both power sets
     common_subsets = power_sets[0] & power_sets[1]
     # Filter by verifier
-    return {subset for subset in common_subsets if verifier(letter, subset, True) and verifier(letter, subset, False)}
+    return {subset for subset in common_subsets if verifier(letter, subset, True) and
+            verifier(letter, subset, False)}
 
 
 # These two will be addressed next time. a is the letter-> a is an outlier

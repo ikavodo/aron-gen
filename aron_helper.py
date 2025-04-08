@@ -42,7 +42,7 @@ def n2w(n):
 
 
 # Helper- generates sequence from generator and input
-def aronson(letter, n, forward=True, inp=None, forward_referring=False):
+def aronson(letter, n, forward=True, inp=None, forward_referring=True):
     # generates 'the rest' from input
     if inp is None:
         seq = list(islice(agen_better(letter, forward=forward), n))
@@ -56,7 +56,7 @@ def aronson(letter, n, forward=True, inp=None, forward_referring=False):
 # Extension of Michael Branicky's implementation in OEIS, allowing for generating backwards-true sequences, as well
 # as starting from a point in the middle
 # see https://oeis.org/A005224
-def agen_better(letter, forward=True, inp=None, forward_referring=False):
+def agen_better(letter, forward=True, inp=None, forward_referring=True):
     def update_from_inp(forward, inp, letter, s):
         # check is correct, be pessimistic
         if not verifier(letter, inp, forward, forward_referring):
@@ -126,7 +126,8 @@ def test_verifiers(letter, n, forward, *verifiers):
         avg_time = sum(times) / n
         print(f"Average execution time for {verifier_name}: {avg_time:.4f} seconds")
 
-#Use slow verifier for debugging
+
+# Use slow verifier for debugging
 def verifier(letter, indices, forward=True, forward_referring=True):
     if forward_referring:
         return verifier_slow(letter, indices, forward)
@@ -188,8 +189,20 @@ def generate_variations(letter, n, forward=True, inp=None):
             stack.append((extend, idx))
 
 
-from itertools import chain, combinations
-from functools import reduce
+def intersect_aronson_sets_small(letter, n):
+    # helper for generating power set
+    def power_set(nums):
+        return set(chain.from_iterable(combinations(nums, r) for r in range(len(nums) + 1)))
+
+    forwards = aronson(letter, n, forward=True)
+    backwards = aronson(letter, n, forward=False)
+    # Look at subsequence intersection
+    intersection = power_set(forwards) & power_set(backwards)
+    # Subsequences need to return True for both verifiers
+    return {i for i in intersection if
+            verifier(letter, i, forward=True, forward_referring=True) and verifier(letter, i, forward=False,
+                                                                                   forward_referring=True)}
+
 
 def intersect_aronson_sets(letter, n):
     def power_set(seq):

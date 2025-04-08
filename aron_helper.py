@@ -41,10 +41,11 @@ def n2w(n):
 
 
 # Helper- generates sequence from generator and input
-def aronson(n, letter, forward=True, inp=None):
+def aronson(n, letter, forward=True, inp=None, forward_referring=False):
     # generates 'the rest' from input
     seq = list(islice(agen_better(letter, forward=forward), n)) if inp is None else \
-        inp + list(islice(agen_better(letter, forward=forward, inp=inp), n - len(inp)))
+        inp + list(
+            islice(agen_better(letter, forward=forward, inp=inp, forward_referring=forward_referring), n - len(inp)))
     # bug: if input is of length n then list(islice(...,0)) doesn't evaluate generator- no VerifierError.
     return seq
 
@@ -52,10 +53,10 @@ def aronson(n, letter, forward=True, inp=None):
 # Extension of Michael Branicky's implementation in OEIS, allowing for generating backwards-true sequences, as well
 # as starting from a point in the middle
 # see https://oeis.org/A005224
-def agen_better(letter, forward=True, inp=None):
+def agen_better(letter, forward=True, inp=None, forward_referring=False):
     def update_from_inp(forward, inp, letter, s):
         # check is correct, be pessimistic
-        if not verifier(letter, inp, forward, True):
+        if not verifier(letter, inp, forward, forward_referring):
             raise VerifierError()
         for i in inp:
             s += (n2w(i) if forward else n2w(i)[::-1])
@@ -96,7 +97,7 @@ def verifier_slow(letter, indices, forward=True):
 
 
 def test_verifiers(letter, n, forward, *verifiers):
-    seq = list(islice(agen_better(letter, forward=forward), n))  # Assuming agen_better is defined elsewhere
+    seq = aronson(n,letter)
     execution_times = {}
 
     # Loop over verifiers
@@ -123,8 +124,8 @@ def test_verifiers(letter, n, forward, *verifiers):
         print(f"Average execution time for {verifier_name}: {avg_time:.4f} seconds")
 
 
-def verifier(letter, indices, forward=True, forwards_referring=False):
-    if forwards_referring:
+def verifier(letter, indices, forward=True, forward_referring=False):
+    if forward_referring:
         return verifier_slow(letter, indices, forward)
     else:
         # prior knowledge about monotonicity allows function to run faster

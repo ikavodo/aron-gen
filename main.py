@@ -4,34 +4,6 @@ import aron_helper
 from itertools import islice
 
 
-def test_verif():
-    global inp, num
-    num_terms = aron_helper.pows_two()  # Generates indices [1, 2, 4, 8, ..., 2^1016]
-    function_speed_dict = {'general': 0, 'slicing': 0}
-    # Initialize the input list
-    inp = aron_helper.agen_better(letter)
-    # Iterate over num_terms and time both functions
-    for idx, num in enumerate(num_terms):
-        try:
-            # Time the verifier function
-            verifier_time = timeit.timeit(lambda: aron_helper.verifier(letter, list(islice(inp, num)), forward=True),
-                                          number=1)
-            # Time the verifier_monotonic function
-            verifier_monotonic_time = timeit.timeit(
-                lambda: aron_helper.verifier(letter, list(islice(inp, num)), forward=True),
-                number=1)
-
-            # Compare the times and store the result in the dictionary using the index
-            if verifier_time < verifier_monotonic_time:
-                function_speed_dict['general'] += 1
-            else:
-                function_speed_dict['slicing'] += 1
-        except ValueError:
-            print(idx, num)
-    # slicing is faster for larger sequences
-    print(function_speed_dict)
-
-
 # Test script
 def test_sequence():
     max_tests = 10  # Number of indices to test per letter/algorithm
@@ -57,21 +29,16 @@ def test_sequence():
     print("All tests passed!")
 
 
-# my plan: generate sequences iteratively, such that all are True (maximal runtime). Check for many different sequences
-# by
-# Run the test script
 if __name__ == '__main__':
-    # test_sequence()
-    # both are forwards-referring (use slow verifier)
     seen = []
     n = 5
     letter = 't'
-    [print(seq) for seq in aron_helper.generate_variations(n, letter, False)
-           if seq not in seen and not seen.append(seq)]
+    # [print(seq) for seq in aron_helper.generate_variations(n, letter, False)
+    #        if seq not in seen and not seen.append(seq)]
     print(aron_helper.intersect_aronson_sets(n, letter))
 
-    assert (aron_helper.verifier('t', [18, 8], forward=False, forwards_referring=True))
-    assert (aron_helper.verifier('l', indices=[1, 23], forward=True, forwards_referring=True))
+    assert (aron_helper.verifier('t', [18, 8], forward=False, forward_referring=True))
+    assert (aron_helper.verifier('l', indices=[1, 23], forward=True, forward_referring=True))
 
     #  check working from input
     letter = 't'
@@ -83,68 +50,67 @@ if __name__ == '__main__':
         aron_helper.print_sequence(letter, series)
         # breaks mono implementation....
     print(str(aron_helper.verifier(letter, [10, 12, 7, 17], True)))
-    # Generate indices up to 2**1016
 
-    # if __name__ == '__main__':
-# # Set up argument parser
-# parser = argparse.ArgumentParser(description="Generate sequence based on the provided letter.")
-# parser.add_argument("letter", type=str, help="A single letter from a-z.")
-# parser.add_argument(
-#     "--algorithm",
-#     choices=["forward", "reverse"],
-#     default="forward",
-#     help="Choose the algorithm for generating the sequence.",
-# )
-# parser.add_argument(
-#     "--count",
-#     type=int,
-#     default=10,
-#     help="Number of words to generate. Default is 10.",
-# )
-#
-# # Parse the command-line arguments
-# args = parser.parse_args()
-#
-# # Validate the input
-# letter = args.letter.strip().lower()
-# if len(letter) != 1 or letter not in string.ascii_lowercase:
-#     print("Invalid input! Please enter a single letter (a-z).")
-#     exit()
-#
-# count = args.count
-# if count <= 0:
-#     print("Invalid count! Please specify a positive integer.")
-#     exit()
-#
-# # Select and run the algorithm
-#
-# # Select and run the algorithm
-# if args.algorithm == "forward":
-#     s_suff = ''
-#     generator = agen(letter) #this alg takes care of all cases
-#     indices = list(islice(generator, count))
-#     for i in indices:
-#         s_suff = s_suff + num2words(i, ordinal=True) + DELIMITER
-#     print(letter + S_PREF + s_suff[:-2] + S_END)
-#
-# else:  # args.algorithm == "reverse"
-#
-#     # Handle outlier letters
-#     if is_outlier(letter):
-#         indices = list(islice(gen_outliers(letter), count))
-#         if not indices:
-#             print("No sequence exists")
-#             exit()
-#         # Print all outlier options for this letter
-#         [print(letter + S_PREF + num2words(i, ordinal=True) + S_END) for i in indices]
-#     else:
-#         generator = agen_rev(letter)
-#         #same for forward and backward
-#         indices = list(islice(generator, count))
-#         s_suff = S_END
-#         for i, ord in enumerate(indices):
-#             s_suff = num2words(ord, ordinal=True) + (DELIMITER if i else '') + s_suff
-#             fixed = s_suff.replace(" ", "").replace("-", "").replace(",", "")
-#             if fixed[::-1][ord] != letter:
-#                 raise AssertionError
-#         print(letter + S_PREF + s_suff)
+# if __name__ == '__main__':
+    # # Set up argument parser
+    # parser = argparse.ArgumentParser(description="Generate sequence based on the provided letter.")
+    # parser.add_argument("letter", type=str, help="A single letter from a-z.")
+    # parser.add_argument(
+    #     "--algorithm",
+    #     choices=["forward", "reverse"],
+    #     default="forward",
+    #     help="Choose the algorithm for generating the sequence.",
+    # )
+    # parser.add_argument(
+    #     "--count",
+    #     type=int,
+    #     default=10,
+    #     help="Number of words to generate. Default is 10.",
+    # )
+    #
+    # # Parse the command-line arguments
+    # args = parser.parse_args()
+    #
+    # # Validate the input
+    # letter = args.letter.strip().lower()
+    # if len(letter) != 1 or letter not in string.ascii_lowercase:
+    #     print("Invalid input! Please enter a single letter (a-z).")
+    #     exit()
+    #
+    # count = args.count
+    # if count <= 0:
+    #     print("Invalid count! Please specify a positive integer.")
+    #     exit()
+    #
+    # # Select and run the algorithm
+    #
+    # # Select and run the algorithm
+    # if args.algorithm == "forward":
+    #     s_suff = ''
+    #     generator = agen(letter) #this alg takes care of all cases
+    #     indices = list(islice(generator, count))
+    #     for i in indices:
+    #         s_suff = s_suff + num2words(i, ordinal=True) + DELIMITER
+    #     print(letter + S_PREF + s_suff[:-2] + S_END)
+    #
+    # else:  # args.algorithm == "reverse"
+    #
+    #     # Handle outlier letters
+    #     if is_outlier(letter):
+    #         indices = list(islice(gen_outliers(letter), count))
+    #         if not indices:
+    #             print("No sequence exists")
+    #             exit()
+    #         # Print all outlier options for this letter
+    #         [print(letter + S_PREF + num2words(i, ordinal=True) + S_END) for i in indices]
+    #     else:
+    #         generator = agen_rev(letter)
+    #         #same for forward and backward
+    #         indices = list(islice(generator, count))
+    #         s_suff = S_END
+    #         for i, ord in enumerate(indices):
+    #             s_suff = num2words(ord, ordinal=True) + (DELIMITER if i else '') + s_suff
+    #             fixed = s_suff.replace(" ", "").replace("-", "").replace(",", "")
+    #             if fixed[::-1][ord] != letter:
+    #                 raise AssertionError
+    #         print(letter + S_PREF + s_suff)

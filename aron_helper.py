@@ -2,6 +2,7 @@ from copy import deepcopy
 import random
 from timeit import default_timer
 from itertools import islice, chain, combinations
+from functools import reduce
 
 from num2words import num2words
 
@@ -43,8 +44,10 @@ def n2w(n):
 # Helper- generates sequence from generator and input
 def aronson(n, letter, forward=True, inp=None, forward_referring=False):
     # generates 'the rest' from input
-    seq = list(islice(agen_better(letter, forward=forward), n)) if inp is None else \
-        inp + list(
+    if inp is None:
+        seq = list(islice(agen_better(letter, forward=forward), n))
+    else:
+        seq = inp + list(
             islice(agen_better(letter, forward=forward, inp=inp, forward_referring=forward_referring), n - len(inp)))
     # bug: if input is of length n then list(islice(...,0)) doesn't evaluate generator- no VerifierError.
     return seq
@@ -57,7 +60,7 @@ def agen_better(letter, forward=True, inp=None, forward_referring=False):
     def update_from_inp(forward, inp, letter, s):
         # check is correct, be pessimistic
         if not verifier(letter, inp, forward, forward_referring):
-            raise VerifierError()
+            raise VerifierError(input_data=inp)
         for i in inp:
             s += (n2w(i) if forward else n2w(i)[::-1])
         idx = max(inp)  # inp[-1] if monotonically rising
@@ -185,16 +188,26 @@ def generate_variations(n, letter, forward=True, inp=None):
             stack.append((extend, idx))
 
 
-def intersect_aronson_sets(n, letter):
-    # helper
-    def power_set(nums):
-        return set(chain.from_iterable(combinations(nums, r) for r in range(len(nums) + 1)))
+from itertools import chain, combinations
+from functools import reduce
 
-    forwards = aronson(n, letter, True)
-    backwards = aronson(n, letter, False)
-    # first look at sub-sequence intersection
-    intersection = power_set(forwards) & power_set(backwards)
-    return {i for i in intersection if verifier(letter, i, True) and verifier(letter, i, False)}
+def intersect_aronson_sets(n, letter):
+    def power_set(seq):
+        return set(chain.from_iterable(combinations(seq, r) for r in range(len(seq) + 1)))
+
+    # Initialize sets to accumulate power sets for both directions
+    power_sets = [set(), set()]
+    # Create generators for both directions
+    gen_forward = generate_variations(n, letter, True)
+    gen_backward = generate_variations(n, letter, False)
+    for seq_fwd, seq_bwd in zip(gen_forward, gen_backward):
+        power_sets[0].update(power_set(seq_fwd))
+        power_sets[1].update(power_set(seq_bwd))
+
+    # Compute intersection of both power sets
+    common_subsets = power_sets[0] & power_sets[1]
+    # Filter by verifier
+    return {subset for subset in common_subsets if verifier(letter, subset, True) and verifier(letter, subset, False)}
 
 
 # These two will be addressed next time. a is the letter-> a is an outlier

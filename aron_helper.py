@@ -97,7 +97,7 @@ def verifier_slow(letter, indices, forward=True):
 
 
 def test_verifiers(letter, n, forward, *verifiers):
-    seq = aronson(n,letter)
+    seq = aronson(n, letter)
     execution_times = {}
 
     # Loop over verifiers

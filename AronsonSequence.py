@@ -18,7 +18,7 @@ class ReferralType(Enum):
 
 class AronsonSequence:
     def __init__(self, letter: str, indices: list[int], forward: bool):
-        self.letter = letter
+        self.letter = letter.lower()
         self.indices = indices
         self.forward = forward
         self.human_readable = self._build_string()
@@ -33,6 +33,9 @@ class AronsonSequence:
     def _build_referral_dict(self):
         d = {}
         for idx in self.indices:
+            if idx in d:
+                # in case we are setting
+                continue
             target_idx = idx - 1
             rep = n2w(idx)
             pos = self.string_repr.find(rep)
@@ -46,6 +49,25 @@ class AronsonSequence:
 
     def has_forward_referring(self):
         return any(ref == ReferralType.FORWARD for ref in self.referral_dict.values())
+
+    def get_string_repr(self):
+        """Getter for string representation."""
+        return self.string_repr
+
+    def get_direction(self):
+        """Getter for the direction of the sequence (forward or not)."""
+        return self.forward
+
+    def get_indices(self):
+        """Getter for the sequence indices"""
+        return self.indices
+    def set_indices(self, new_indices: list[int]):
+        """Setter for indices. Updates string_repr, human_readable, and referral_dict."""
+        self.indices = new_indices
+        self.human_readable = self._build_string()
+        self.string_repr = self.human_readable.replace(" ", "").replace(",", "")
+        self.referral_dict = self._build_referral_dict()
+
 
     def __repr__(self):
         return self.human_readable

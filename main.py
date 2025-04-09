@@ -41,6 +41,8 @@ if __name__ == '__main__':
     #
     # [print(seq) for seq in aron_helper.generate_variations(letter, n, True)
     #  if seq not in seen and not seen.append(seq)]
+    l = aron_helper.aronson(letter,5,False)
+    print(aron_helper.get_sequence(letter, l, False, True))
     print(aron_helper.intersect_aronson_sets_small(letter, n))
     seqs = aron_helper.intersect_aronson_sets(letter, n)
     for seq in seqs:

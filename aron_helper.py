@@ -7,10 +7,10 @@ from functools import reduce
 from num2words import num2words
 
 # consts
-BASE_START = " is the "
-BASE_END = " letter"
+START = " is the "
+END = " letter"
 # use this for finding sequences starting with ordinals outside of prefix/suffix range
-SEARCH_LOWER_BOUND = max(len(BASE_START.replace(" ", "")), len(BASE_END.replace(" ", "")))
+SEARCH_LOWER_BOUND = max(len(START.replace(" ", "")), len(END.replace(" ", "")))
 
 
 # Define the custom exception class
@@ -41,6 +41,8 @@ def n2w(n):
     return os.replace(", ", "").replace(" ", "").replace("-", "")
 
 
+
+
 # Helper- generates sequence from generator and input
 def aronson(letter, n, forward=True, inp=None, forward_referring=True):
     # generates 'the rest' from input
@@ -68,7 +70,7 @@ def agen_better(letter, forward=True, inp=None, forward_referring=True):
         return s, idx
 
     # Initialize sequence based on direction
-    s = (letter + BASE_START).replace(" ", "") if forward else BASE_END.replace(" ", "")[::-1]
+    s = (letter + START).replace(" ", "") if forward else END.replace(" ", "")[::-1]
     idx = 0
     if inp:
         # update to given point
@@ -139,7 +141,7 @@ def verifier(letter, indices, forward=True, forward_referring=True):
 # only works for non-forwards referring sequences!
 def verifier_fast(letter, indices, forward=True):
     # Determine the initial sequence based on the direction (forward or reverse)
-    s = (letter + BASE_START).replace(" ", "") if forward else BASE_END.replace(" ", "")[::-1]
+    s = (letter + START).replace(" ", "") if forward else END.replace(" ", "")[::-1]
     for idx in indices:
         # Add the ordinal to the sequence
         s += (n2w(idx) if forward else n2w(idx)[::-1])
@@ -153,13 +155,32 @@ def verifier_fast(letter, indices, forward=True):
     return True
 
 
+def find_singletons(letter):
+    def find_singleton_upper_bound():
+        lower = len(START.replace(" ", ""))
+        upper = 100  # For n >= 100, len(ordinal(n)) >= len("one-hundred")
+
+        for m in range(2 * lower, upper):
+            len_ord_m = len(n2w(m))
+            # Check that all larger ordinals are at least as long
+            is_candidate = all([len(n2w(k)) >= len_ord_m for k in range(m + 1, upper)])
+            # Ensure m is long enough relative to surrounding text
+            is_long_enough = (m >= 2 * lower + len_ord_m)
+
+            if is_candidate and is_long_enough:
+                return m
+
+    upper = find_singleton_upper_bound()
+    return {(i,) for i in range(upper) if verifier(letter, (i,), True) and verifier(letter, (i,), False)}
+
+
 # Generate sentence from sequence input
 def get_sequence(letter, indices, forward=True, delimited=False):
     delim = ', ' if delimited else ''
     idx_ord = indices if forward else indices[::-1]
-    pref = (letter + BASE_START).replace(" ", "") if not delimited else letter + BASE_START
+    pref = (letter + START).replace(" ", "") if not delimited else letter + START
     mid = (num2words(idx, ordinal=True) if delimited else n2w(idx) for idx in idx_ord)
-    suff = BASE_END.replace(" ", "") if not delimited else BASE_END
+    suff = END.replace(" ", "") if not delimited else END
     return f"{pref}{delim.join(mid)}{suff}"
 
 
@@ -226,7 +247,7 @@ def intersect_aronson_sets(letter, n):
 
 # These two will be addressed next time. a is the letter-> a is an outlier
 def is_outlier(letter):
-    s_pref, s_suff = (letter + BASE_START).replace(" ", ""), BASE_END.replace(" ", "")
+    s_pref, s_suff = (letter + START).replace(" ", ""), END.replace(" ", "")
     s = s_pref + s_suff
     return s[::-1].find(letter) == len(s) - 1
 
@@ -234,7 +255,7 @@ def is_outlier(letter):
 # Generate singleton classes via a correction approach. Prove that it terminates
 # (numbers grow larger than their ordinal reps)
 def gen_outliers(letter):
-    s_pref, s_suff = (letter + BASE_START).replace(" ", ""), BASE_END.replace(" ", "")
+    s_pref, s_suff = (letter + START).replace(" ", ""), END.replace(" ", "")
     seen_idxs = {None}  # Start with the initial index 0
     new_indices = {None}  # Set of indices to check
     while new_indices:

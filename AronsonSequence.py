@@ -6,92 +6,298 @@ STR_END = " letter"
 
 
 def n2w(n):
+    """
+    Converts a number n to its ordinal word representation.
+
+    :param n: The number to convert.
+    :return: The ordinal word representation of the number.
+    """
     os = num2words(n, ordinal=True).replace(" and", "")
     return os.replace(", ", "").replace(" ", "").replace("-", "")
 
 
 class ReferralType(Enum):
+    """
+    Enum for keeping track of where elements refer to relatively to their ordinal representation.
+
+    BACKWARD: Refers to a previous position.
+    SELF: Refers to its own position.
+    FORWARD: Refers to a later position.
+    """
     BACKWARD = 1
     SELF = 2
     FORWARD = 3
 
 
 class AronsonSequence:
-    def __init__(self, letter: str, indices: list[int], forward: bool):
+    """
+    Represents an Aronson sequence, which is a sequence of elements where each element refers to the ordinal of a letter
+    in a string that describes the letter's position in the sequence.
+
+    :param letter: The letter used for the sequence.
+    :param elements: A list of elements in the sequence.
+    :param forward: Whether the sequence is generated in the forward direction (True) or reversed (False).
+    """
+
+    def __init__(self, letter: str, elements: list[int], forward: bool):
+        """
+        Initializes the AronsonSequence with the given letter, elements, and direction.
+
+        :param letter: The letter used for the sequence.
+        :param elements: A list of elements in the sequence.
+        :param forward: Whether the sequence is generated in the forward direction.
+        """
+        # Validate letter
+        if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
+            raise ValueError(f"Invalid letter: {letter!r}. Must be a single alphabetic character.")
+
+        # Validate elements
+        if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements) or len(
+                set(elements)) != len(elements):
+            raise ValueError(f"Invalid elements: {elements}. Must be a list of non-repeating positive integers.")
+        # Not allowed
+        if not elements:
+            raise ValueError("elements list cannot be empty.")
+
+        # Validate forward
+        if not isinstance(forward, bool):
+            raise ValueError(f"Invalid forward value: {forward}. Must be a boolean.")
+
+        # Set attributes
         self.letter = letter.lower()
-        self.indices = indices
+        self.elements = elements
         self.forward = forward
-        self.human_readable = self._build_string()
-        self.string_repr = self.human_readable.replace(" ", "").replace(",", "")
+        self.sentence_repr = self._build_string()
+        self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
         self.referral_dict = self._build_referral_dict()
+
+    def _update_sentence(self):
+        """
+        Updates the string representation of the sequence and its sanitized form.
+
+        This method constructs the `sentence_repr` and the `sentence` attributes.
+        """
+        self.sentence_repr = self._build_string()
+        self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
 
     def _build_string(self):
-        indices = self.indices if self.forward else self.indices[::-1]
-        parts = [self.letter + STR_START] + [n2w(i) for i in indices] + [STR_END]
-        return ''.join(parts)
+        """
+        Returns the human-readable string representation of the AronsonSequence.
+
+        :return: The string representation of the sequence.
+        """
+        idx_ord = self.elements if self.forward else self.elements[::-1]
+        return f"{self.letter + STR_START}{', '.join(num2words(i, ordinal=True) for i in idx_ord)}{STR_END}"
+
+    def _get_referral_type(self, idx):
+        """
+        Determines the referral type for a specific index in the sequence.
+
+        :param idx: The index of the element in the sequence.
+        :return: A value from `ReferralType` indicating the referral type.
+        """
+        target_idx = idx - 1
+        rep = n2w(idx)
+        if self.forward:
+            pos = self.sentence.find(rep)
+        else:
+            pos = self.sentence[::-1].find(rep[::-1])
+
+        if target_idx < pos:
+            return ReferralType.BACKWARD
+        elif pos <= target_idx < pos + len(rep):
+            return ReferralType.SELF
+        else:
+            return ReferralType.FORWARD
 
     def _build_referral_dict(self):
-        d = {}
-        for idx in self.indices:
-            if idx in d:
-                # in case we are setting
-                continue
-            target_idx = idx - 1
-            rep = n2w(idx)
-            pos = self.string_repr.find(rep)
-            if target_idx < pos:
-                d[idx] = ReferralType.BACKWARD
-            elif pos <= target_idx < pos + len(rep):
-                d[idx] = ReferralType.SELF
-            else:
-                d[idx] = ReferralType.FORWARD
-        return d
+        """
+        Builds the referral dictionary that maps each element to its corresponding referral type.
+
+        :return: A dictionary mapping each element to its referral type.
+        """
+        return {idx: self._get_referral_type(idx) for idx in self.elements}
+
+    def _update_referral_dict(self, new_elements):
+        """
+        Updates the referral dictionary with new elements.
+
+        :param new_elements: A list of new elements to add to the dictionary.
+        """
+        # no key duplicities- no overwrites
+        self.referral_dict.update({
+            idx: self._get_referral_type(idx) for idx in new_elements
+        })
 
     def has_forward_referring(self):
+        """
+        Checks if there are any forward referring elements in the sequence.
+
+        :return: True if there are forward referring elements, False otherwise.
+        """
         return any(ref == ReferralType.FORWARD for ref in self.referral_dict.values())
 
-    def get_string_repr(self):
-        """Getter for string representation."""
-        return self.string_repr
+    def _get_occurrences(self):
+        """
+        Returns the 1-based positions of `self.letter` in the sentence, respecting direction (forward or reversed).
+
+        :return: A list of positions where the letter occurs.
+        """
+        s = self.sentence if self.forward else self.sentence[::-1]
+        return [i + 1 for i, char in enumerate(s) if char == self.letter]
+
+    def is_self_contained(self):
+        """
+        Checks if the sequence is self-contained, i.e., the positions of the letter in the sentence match the elements.
+
+        :return: True if the sequence is self-contained, False otherwise.
+        """
+        return self._get_occurrences() == self.elements
+
+    def is_correct(self):
+        """
+        Verifies if the sequence is valid by checking if all elements occur at the correct positions.
+
+        :return: True if the sequence is valid, False otherwise.
+        """
+        return all(ind in self._get_occurrences() for ind in self.elements)
+
+    def get_sentence(self):
+        """
+        Getter for the string representation of the sequence.
+
+        :return: The string representation of the sequence.
+        """
+        return self.sentence
 
     def get_direction(self):
-        """Getter for the direction of the sequence (forward or not)."""
+        """
+        Getter for the direction of the sequence (forward or not).
+
+        :return: True if forward, False otherwise.
+        """
         return self.forward
 
-    def get_indices(self):
-        """Getter for the sequence indices"""
-        return self.indices
-    def set_indices(self, new_indices: list[int]):
-        """Setter for indices. Updates string_repr, human_readable, and referral_dict."""
-        self.indices = new_indices
-        self.human_readable = self._build_string()
-        self.string_repr = self.human_readable.replace(" ", "").replace(",", "")
-        self.referral_dict = self._build_referral_dict()
+    def get_elements(self):
+        """
+        Getter for the elements of the sequence.
 
+        :return: The elements of the sequence.
+        """
+        return self.elements
+
+    def get_referral_dict(self):
+        """
+        Getter for the referral dictionary.
+
+        :return: The referral dictionary.
+        """
+        return self.referral_dict
+
+    def append_elements(self, new_elements: list[int]):
+        """
+        Appends new elements to the sequence while maintaining the integrity of the sequence.
+
+        :param new_elements: A list of new elements to append.
+        """
+        self.set_elements(new_elements, append=True)
+
+    def set_elements(self, new_elements: list[int], append=False):
+        """
+        Setter for the elements of the sequence. Updates the sentence, sentence_repr, and referral_dict.
+
+        :param new_elements: The new elements for the sequence.
+        :param append: Whether to append or replace elements.
+        """
+        # perhaps unnecessary
+        if not new_elements and not append:
+            raise ValueError("Cannot set an empty sequence.")
+
+        # check input
+        if not isinstance(new_elements, list) or not all(isinstance(i, int) and i > 0 for i in new_elements) or len(
+                set(new_elements)) != len(new_elements):
+            raise ValueError(f"Invalid elements: {new_elements}. Must be a list of non-repeating positive integers.")
+
+        if append:
+            # Append new elements while avoiding duplicates
+            self.elements.extend(elem for elem in new_elements if elem not in self.elements)
+            self._update_sentence()
+            self._update_referral_dict(new_elements)
+        else:
+            # Replace elements
+            self.elements = new_elements
+            self._update_sentence()
+            self.referral_dict = self._build_referral_dict()
+
+    def set_letter(self, letter):
+        """
+        Sets the letter for the sequence and updates the sentence accordingly.
+
+        :param letter: The new letter to set for the sequence.
+        """
+        if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
+            raise ValueError(f"Invalid letter: {letter!r}. Must be a single alphabetic character.")
+        self.letter = letter
+        # need to update sentence
+        self._update_sentence()
+
+    def flip_direction(self):
+        """
+        Flips the direction of the sequence (from forward to reversed or vice versa).
+
+        Updates the sentence accordingly.
+        """
+        self.forward = not self.forward
+        # need to update sentence
+        self._update_sentence()
 
     def __repr__(self):
-        return self.human_readable
+        """
+        Returns the human-readable representation of the Aronson sequence.
+
+        :return: The human-readable string representation of the sequence.
+        """
+        return self.sentence_repr
 
     def __eq__(self, other):
-        return isinstance(other, AronsonSequence) and self.indices == other.indices and self.letter == other.letter \
-            and self.forward == other.direction
+        """
+        Compares two Aronson sequences for equality based on letter, elements, and direction.
+
+        :param other: The other AronsonSequence to compare with.
+        :return: True if the sequences are equal, False otherwise.
+        """
+        return isinstance(other, AronsonSequence) and self.elements == other.elements and self.letter == other.letter \
+            and self.forward == other.forward
 
     def __hash__(self):
-        return hash((tuple(self.indices), self.letter, self.forward))
+        """
+        Returns a hash value for the AronsonSequence object based on its letter, elements, and direction.
+
+        :return: A hash value for the sequence.
+        """
+        return hash((tuple(self.elements), self.letter, self.forward))
 
     def __iter__(self):
-        return iter(self.indices)
+        """
+        Returns an iterator over the elements of the sequence.
+
+        :return: An iterator for the elements.
+        """
+        return iter(self.elements)
 
     def __len__(self):
-        return len(self.indices)
+        """
+        Returns the length of the Aronson sequence (i.e., the number of elements).
+
+        :return: The length of the Aronson sequence.
+        """
+        return len(self.elements)
 
     def __getitem__(self, index: int):
         """
-        Returns the index at the specified position in the Aronson sequence.
+        Returns the element at a specified position in the Aronson sequence.
 
-        @param index The position of the index to return from the Aronson sequence.
-        @return The index at the specified position.
+        :param index: The index position to retrieve.
+        :return: The element at the specified position.
         """
-        if index < 0 or index >= len(self.indices):
-            raise IndexError("Index out of range")
-        return self.indices[index]
+        return self.elements[index]

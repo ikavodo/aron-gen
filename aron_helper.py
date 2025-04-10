@@ -178,9 +178,9 @@ def find_singletons(letter):
 def get_sequence(letter, indices, forward=True, delimited=False):
     delim = ', ' if delimited else ''
     idx_ord = indices if forward else indices[::-1]
-    pref = (letter + START).replace(" ", "") if not delimited else letter + START
+    pref =  letter + START if delimited else  (letter + START).replace(" ", "")
     mid = (num2words(idx, ordinal=True) if delimited else n2w(idx) for idx in idx_ord)
-    suff = END.replace(" ", "") if not delimited else END
+    suff = END if delimited else END.replace(" ", "")
     return f"{pref}{delim.join(mid)}{suff}"
 
 

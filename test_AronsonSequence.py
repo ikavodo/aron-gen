@@ -41,13 +41,13 @@ class AronsonSequenceTests(unittest.TestCase):
             self.assertIn(num2words(elem, ordinal=True), str(seq))
 
     def test_sentence(self):
-        # test that the internal sentence is correct, use somehting with hyphen
+        # test that the internal sentence is correct, use something with hyphen
         elem = 25
         suffix = STR_START.replace(" ", "") + n2w(elem) + STR_END.replace(" ", "")
-        inds = [3, 4]
+        elems = [3, 4]
         test_sequences = [
             (AronsonSequence('t', [elem], True), suffix),
-            (AronsonSequence('t', inds, False), ''.join([n2w(i) for i in inds[::-1]]))
+            (AronsonSequence('t', elems, False), ''.join([n2w(i) for i in elems[::-1]]))
         ]
 
         for seq, part in test_sequences:
@@ -142,7 +142,7 @@ class AronsonSequenceTests(unittest.TestCase):
                 # When append=True, ensure the original elements are retained
                 for elem in prev_elements:
                     self.assertIn(elem, seq.get_elements())
-                # check string represntations work as expected
+                # check string representations work as expected
                 self.assertIn(seq_repr[:-len(STR_END)], str(seq))
             else:
                 # When append=False, the previous elements should be removed
@@ -157,11 +157,11 @@ class AronsonSequenceTests(unittest.TestCase):
         seq.set_elements([1, 2], append=True)
         # Ensure no new elements are added
         self.assertEqual(seq.get_elements(), prev_elements)
-        dups = [5, 1, 2, 6]
+        duplicates = [5, 1, 2, 6]
         # Test appending new elements with some duplicates
-        seq.set_elements(dups, append=True)
+        seq.set_elements(duplicates, append=True)
         # Ensure original elements (1, 2) remain and new elements (5, 6) are added in correct order
-        self.assertEqual(sorted(dups), seq.get_elements())
+        self.assertEqual(sorted(duplicates), seq.get_elements())
 
     def set_elements_empty(self):
         seq = AronsonSequence('t', [1, 2], True)
@@ -181,16 +181,17 @@ class AronsonSequenceTests(unittest.TestCase):
         seq_cpy = seq.copy()
         self.assertEqual(seq, seq_cpy)
         seq.append_elements([3])
-        # elements is mutable-> copy should not be shallow
+        # elements are mutable-> copy should not be shallow
         self.assertNotEqual(seq, seq_cpy)
 
     def test_append_element_wrapper(self):
         seq = AronsonSequence('t', [1, 2], True)
         seq_cpy = seq.copy()
         seq.set_elements([3, 4], append=True)
-        #check these two do the same thing
+        # check these two do the same thing
         seq_cpy.append_elements([3, 4])
-        self.assertEqual(seq,seq_cpy)
+        self.assertEqual(seq, seq_cpy)
+
     # === Other Method Tests ===
 
     def test_iter_and_getitem(self):
@@ -207,7 +208,7 @@ class AronsonSequenceTests(unittest.TestCase):
         b = AronsonSequence('z', [1, 2], True)
         c = AronsonSequence('z', [1, 2], False)
         d = AronsonSequence('d', [1, 2], True)
-        e = AronsonSequence('z', [1,3], True)
+        e = AronsonSequence('z', [1, 3], True)
 
         self.assertEqual(a, b)
         self.assertNotEqual(a, c)
@@ -217,7 +218,6 @@ class AronsonSequenceTests(unittest.TestCase):
         self.assertNotEqual(hash(a), hash(c))
         self.assertNotEqual(hash(a), hash(d))
         self.assertNotEqual(hash(a), hash(e))
-
 
     def test_large_sequence(self):
         # Create a very large sequence
@@ -251,6 +251,7 @@ class AronsonSequenceTests(unittest.TestCase):
         # seq is hashable
         s.add(seq)
         self.assertIn(seq, s)
+
 
 if __name__ == '__main__':
     unittest.main()

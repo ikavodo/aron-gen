@@ -48,20 +48,16 @@ class AronsonSequence:
         :param forward: Whether the sequence is generated in the forward direction.
         """
         # Validate letter
-        if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
-            raise ValueError(f"Invalid letter: {letter!r}. Must be a single alphabetic character.")
+        self._check_letter(letter)
 
         # Validate elements
-        if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements) or len(
-                set(elements)) != len(elements):
-            raise ValueError(f"Invalid elements: {elements}. Must be a list of non-repeating positive integers.")
-        # Not allowed
+        self._check_elements(elements)
+
+        # If I put this in _check_elements()-> append_elements([]) raises ValueError
         if not elements:
             raise ValueError("elements list cannot be empty.")
 
-        # Validate forward
-        if not isinstance(forward, bool):
-            raise ValueError(f"Invalid forward value: {forward}. Must be a boolean.")
+        self._check_direction(forward)
 
         # Set attributes
         self.letter = letter.lower()
@@ -70,6 +66,23 @@ class AronsonSequence:
         self.sentence_repr = self._build_string()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
         self.referral_dict = self._build_referral_dict()
+
+    @staticmethod
+    def _check_direction(forward):
+        # Validate forward
+        if not isinstance(forward, bool):
+            raise ValueError(f"Invalid forward value: {forward}. Must be a boolean.")
+
+    @staticmethod
+    def _check_elements(elements):
+        if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements) or len(
+                set(elements)) != len(elements):
+            raise ValueError(f"Invalid elements: {elements}. Must be a list of non-repeating positive integers.")
+
+    @staticmethod
+    def _check_letter(letter):
+        if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
+            raise ValueError(f"Invalid letter: {letter!r}. Must be a single alphabetic character.")
 
     def _update_sentence(self):
         """
@@ -162,6 +175,63 @@ class AronsonSequence:
         """
         return all(ind in self._get_occurrences() for ind in self.elements)
 
+# setters
+    def set_elements(self, new_elements: list[int], append=False):
+        """
+        Setter for the elements of the sequence. Updates the sentence, sentence_repr, and referral_dict.
+
+        :param new_elements: The new elements for the sequence.
+        :param append: Whether to append or replace elements.
+        """
+        # perhaps unnecessary
+        if not new_elements and not append:
+            raise ValueError("Cannot set an empty sequence.")
+
+        # check input
+        self._check_elements(new_elements)
+
+        if append:
+            # Append new elements while avoiding duplicates
+            self.elements.extend(elem for elem in new_elements if elem not in self.elements)
+            self._update_sentence()
+            self._update_referral_dict(new_elements)
+        else:
+            # Replace elements
+            self.elements = new_elements
+            self._update_sentence()
+            self.referral_dict = self._build_referral_dict()
+
+
+    def append_elements(self, new_elements: list[int]):
+        """
+        Wrapper function to append new elements to the sequence.
+
+        :param new_elements: A list of new elements to append.
+        """
+        self.set_elements(new_elements, append=True)
+
+    def set_letter(self, letter):
+        """
+        Sets the letter for the sequence and updates the sentence accordingly.
+
+        :param letter: The new letter to set for the sequence.
+        """
+        self._check_letter(letter)
+        self.letter = letter
+        # need to update sentence
+        self._update_sentence()
+
+    def flip_direction(self):
+        """
+        Flips the direction of the sequence (from forward to reversed or vice versa).
+
+        Updates the sentence accordingly.
+        """
+        self.forward = not self.forward
+        # need to update sentence
+        self._update_sentence()
+
+# getters
     def get_sentence(self):
         """
         Getter for the string representation of the sequence.
@@ -194,63 +264,6 @@ class AronsonSequence:
         """
         return self.referral_dict
 
-    def append_elements(self, new_elements: list[int]):
-        """
-        Appends new elements to the sequence while maintaining the integrity of the sequence.
-
-        :param new_elements: A list of new elements to append.
-        """
-        self.set_elements(new_elements, append=True)
-
-    def set_elements(self, new_elements: list[int], append=False):
-        """
-        Setter for the elements of the sequence. Updates the sentence, sentence_repr, and referral_dict.
-
-        :param new_elements: The new elements for the sequence.
-        :param append: Whether to append or replace elements.
-        """
-        # perhaps unnecessary
-        if not new_elements and not append:
-            raise ValueError("Cannot set an empty sequence.")
-
-        # check input
-        if not isinstance(new_elements, list) or not all(isinstance(i, int) and i > 0 for i in new_elements) or len(
-                set(new_elements)) != len(new_elements):
-            raise ValueError(f"Invalid elements: {new_elements}. Must be a list of non-repeating positive integers.")
-
-        if append:
-            # Append new elements while avoiding duplicates
-            self.elements.extend(elem for elem in new_elements if elem not in self.elements)
-            self._update_sentence()
-            self._update_referral_dict(new_elements)
-        else:
-            # Replace elements
-            self.elements = new_elements
-            self._update_sentence()
-            self.referral_dict = self._build_referral_dict()
-
-    def set_letter(self, letter):
-        """
-        Sets the letter for the sequence and updates the sentence accordingly.
-
-        :param letter: The new letter to set for the sequence.
-        """
-        if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
-            raise ValueError(f"Invalid letter: {letter!r}. Must be a single alphabetic character.")
-        self.letter = letter
-        # need to update sentence
-        self._update_sentence()
-
-    def flip_direction(self):
-        """
-        Flips the direction of the sequence (from forward to reversed or vice versa).
-
-        Updates the sentence accordingly.
-        """
-        self.forward = not self.forward
-        # need to update sentence
-        self._update_sentence()
-
     def __repr__(self):
         """
         Returns the human-readable representation of the Aronson sequence.
@@ -268,6 +281,13 @@ class AronsonSequence:
         """
         return isinstance(other, AronsonSequence) and self.elements == other.elements and self.letter == other.letter \
             and self.forward == other.forward
+
+    def copy(self):
+        return AronsonSequence(
+            self.letter,
+            self.elements.copy(),  # avoid sharing mutable state
+            self.forward
+        )
 
     def __hash__(self):
         """

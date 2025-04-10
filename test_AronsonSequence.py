@@ -192,9 +192,18 @@ class AronsonSequenceTests(unittest.TestCase):
         a = AronsonSequence('z', [1, 2], True)
         b = AronsonSequence('z', [1, 2], True)
         c = AronsonSequence('z', [1, 2], False)
+        d = AronsonSequence('d', [1, 2], True)
+        e = AronsonSequence('z', [1,3], True)
+
         self.assertEqual(a, b)
         self.assertNotEqual(a, c)
+        self.assertNotEqual(a, d)
+        self.assertNotEqual(a, e)
         self.assertEqual(hash(a), hash(b))
+        self.assertNotEqual(hash(a), hash(c))
+        self.assertNotEqual(hash(a), hash(d))
+        self.assertNotEqual(hash(a), hash(e))
+
 
     def test_large_sequence(self):
         # Create a very large sequence
@@ -222,6 +231,12 @@ class AronsonSequenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             seq.set_elements(['a', 'b', 'c'], append=True)
 
+    def test_is_hashable(self):
+        seq = AronsonSequence('t', [1, 2, 3], True)
+        s = set()
+        # seq is hashable
+        s.add(seq)
+        self.assertIn(seq, s)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,8 +1,8 @@
-from itertools import islice, cycle, combinations
+from itertools import islice, cycle
 from AronsonSequence import AronsonSequence, n2w, STR_START, STR_END
 
 # upper bound for searching for singleton Aronson sequences,
-# computed using the find_singleton_upper_bound method
+# computed using the find_singleton_upper_bound() method
 SINGLETON_UPPER = 40
 
 

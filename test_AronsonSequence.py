@@ -129,7 +129,6 @@ class AronsonSequenceTests(unittest.TestCase):
             with self.subTest(seq=seq):
                 self.assertEqual(seq.is_self_contained(), expected)
 
-    # I am currently here. Do I need an append_elements() method?
     def test_set_elements_append(self):
         for append_flag in [False, True]:
             seq = AronsonSequence('t', [1, 2], True)
@@ -177,6 +176,21 @@ class AronsonSequenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             seq.set_elements([], append=False)
 
+    def test_cpy(self):
+        seq = AronsonSequence('t', [1, 2], True)
+        seq_cpy = seq.copy()
+        self.assertEqual(seq, seq_cpy)
+        seq.append_elements([3])
+        # elements is mutable-> copy should not be shallow
+        self.assertNotEqual(seq, seq_cpy)
+
+    def test_append_element_wrapper(self):
+        seq = AronsonSequence('t', [1, 2], True)
+        seq_cpy = seq.copy()
+        seq.set_elements([3, 4], append=True)
+        #check these two do the same thing
+        seq_cpy.append_elements([3, 4])
+        self.assertEqual(seq,seq_cpy)
     # === Other Method Tests ===
 
     def test_iter_and_getitem(self):

@@ -175,7 +175,7 @@ class AronsonSequence:
         """
         return all(ind in self._get_occurrences() for ind in self.elements)
 
-# setters
+    # setters
     def set_elements(self, new_elements: list[int], append=False):
         """
         Setter for the elements of the sequence. Updates the sentence, sentence_repr, and referral_dict.
@@ -200,7 +200,6 @@ class AronsonSequence:
             self.elements = new_elements
             self._update_sentence()
             self.referral_dict = self._build_referral_dict()
-
 
     def append_elements(self, new_elements: list[int]):
         """
@@ -231,7 +230,7 @@ class AronsonSequence:
         # need to update sentence
         self._update_sentence()
 
-# getters
+    # getters
     def get_sentence(self):
         """
         Getter for the string representation of the sequence.

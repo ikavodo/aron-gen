@@ -1,0 +1,6 @@
+# n=0: [] (empty sequence)? Technically not allowed because not symantically correct:
+# "T is the letter in this sentence"... Can change it to "T is a letter in this sentence", special case
+# n=1:
+# [1], [4], [10], [12], [19], [21], [22]
+# n=2:
+# [1, 4], [1, 11], [1, 12], [1

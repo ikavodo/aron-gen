@@ -1,10 +1,8 @@
 from itertools import islice, cycle
-from AronsonSequence import AronsonSequence, n2w, PREFIX, SUFFIX, ReferralType
+from AronsonSequence import AronsonSequence, n2w, PREFIX, SUFFIX, ReferralType, Direction
 from typing import Callable
-from collections import defaultdict
 
-# upper bound for searching for singleton Aronson sequences,
-# computed using the find_singleton_upper_bound() method
+# upper bound for searching for singleton Aronson sequences
 SINGLETON_UPPER = 40
 
 
@@ -51,30 +49,29 @@ class GenError(Exception):
         return f"{self.message}: {self.input_sentence} {suffix}"
 
 
-# goal: enumerate sequences within the set. This should be done by length n of the sequence.
-# Notice that for length n the ordinals in the sequence have an upper-bound.
-# Idea: start from singleton sets. Some of these are self-contained/forward-referring and cannot be extended.
+# This class currently has one goal: enumerating all sequences within set with length up to n
+# this should be done in iterations using four generation rules: backwards (gen_sequence), forwards (
 # Others can be extended by one element using Aronson algorithm (backward-refer).
 # For example: enumerate() -> AronsonSequence('t', [1], True), AronsonSequence('t', [4], True),
 # AronsonSequence('t', [11], True)
 # Use partition of referring to make equivalence sets?
 # But how to make sure we generate *all* sequences of length n without reverting to brute-force search?
 # Need to encode logic somehow.
+# Be allowed to find intersection of AronsonSets with different letters?
 class AronsonSet:
     """
     Class for generating AronsonSequence objects. Is equivalent to sets A_x(->) or A_x(<-) where x is some letter.
     Provides methods for generating Aronson sequences and verifying their correctness.
     AronsonSequence is primitive class
     :param letter: The letter used for generating sequences.
-    :param forward: Whether the sequences should be generated in the forward direction.
+    :param direction: sequences generation direction.
     """
 
     # allow to generate from a sequence?
-    def __init__(self, letter: str, forward: bool):
+    def __init__(self, letter: str, direction: Direction):
         self.letter = letter.lower()  # Letter used for generating sequences
-        self.forward = forward  # Sequence direction
-        self.seen_seqs = set() # Sequences seen so far. This field may change
-
+        self.direction = direction  # Sequence direction
+        self.seen_seqs = set()  # Sequences seen so far. This field may change
 
     @property
     def display_letter(self):
@@ -88,7 +85,7 @@ class AronsonSet:
         :return: this instance
         """
         obj = cls(seq.get_letter(), seq.get_direction())
-        obj.seen_seqs.add(seq) #remember which seq generated class
+        obj.seen_seqs.add(seq)  # remember which seq generated class
         return obj
 
     def _ismember(self, seq: AronsonSequence, conditional: Callable[[AronsonSequence], bool]) -> bool:
@@ -100,7 +97,7 @@ class AronsonSet:
         """
         return (
                 seq.get_letter() == self.display_letter and
-                seq.get_direction() == self.forward and conditional(seq)
+                seq.get_direction() == self.direction and conditional(seq)
         )
 
     def is_correct(self, seq: AronsonSequence):
@@ -132,7 +129,7 @@ class AronsonSet:
             raise VerificationError
         self.seen_seqs.add(seq)
 
-    def gen_sequence(self, n: int, seq: AronsonSequence = None) -> AronsonSequence:
+    def gen_sequence(self, n: int, seq: AronsonSequence) -> AronsonSequence:
         """
         Generates a new AronsonSequence of length n either from scratch or by extending an existing sequence.
 
@@ -140,23 +137,18 @@ class AronsonSet:
         :param seq: An optional input AronsonSequence to extend. If None, a new sequence is generated.
         :return: A new AronsonSequence object.
         """
-        if seq is None:
-            # Generate 'basic' backward referring Aronson sequence of length n 
-            seq = list(islice(self._agen(), n))
-            seq = AronsonSequence(self.letter, seq, self.forward)
 
-        else:
-            #do some error checking here
-            # Use AronsonSequence as seed for generation
-            if not self.is_correct(seq):  # is of correct letter and direction
-                raise VerificationError(input_sentence=str(seq))  # Verifier failed
-            elif seq.has_forward_referring() or seq.is_complete():
-                # can't be extended
-                raise GenError(input_sentence=seq, forward_ref=True)
-            # extend input using generator
-            new_elements = list(islice(self._agen(seq=seq), n - len(seq)))
-            # update sequence
-            seq.append_elements(new_elements)
+        # do some error checking here
+        # Use AronsonSequence as seed for generation
+        if not self.is_correct(seq):  # is of correct letter and direction
+            raise VerificationError(input_sentence=str(seq))  # Verifier failed
+        elif seq.has_forward_referring() or seq.is_complete():
+            # can't be extended
+            raise GenError(input_sentence=seq, forward_ref=True)
+        # extend input using generator
+        new_elements = list(islice(self._agen(seq=seq), n - len(seq)))
+        # update sequence
+        seq.append_elements(new_elements)
 
         if len(seq) != n:
             # could not extend sequence or generate from scratch up to desired length
@@ -181,7 +173,8 @@ class AronsonSet:
         else:
             # generate from scratch
             idx = 0
-            s = (self.letter + PREFIX).replace(" ", "") if self.forward else SUFFIX[::-1].replace(" ", "")
+            s = (self.letter + PREFIX).replace(" ", "") if self.direction == Direction.FORWARD else \
+                SUFFIX[::-1].replace(" ", "")
 
         while True:
             idx_rel = 1 + s.find(self.letter)  # Find the relative position of the letter
@@ -189,7 +182,7 @@ class AronsonSet:
                 break
             idx += idx_rel
             yield idx
-            extend = n2w(idx) if self.forward else n2w(idx)[::-1]  # Extend the string buffer
+            extend = n2w(idx) if self.direction == Direction.FORWARD else n2w(idx)[::-1]  # Extend the string buffer
             s = s[idx_rel:] + extend
 
     def generate_singletons(self):
@@ -199,7 +192,7 @@ class AronsonSet:
         :return: A generator yielding valid singleton AronsonSequence objects.
         """
         for idx in range(1, SINGLETON_UPPER):
-            candidate = AronsonSequence(self.letter, [idx], self.forward)
+            candidate = AronsonSequence(self.letter, [idx], self.direction)
             try:
                 # runs verifier on candidate
                 self.add_sequence(candidate)

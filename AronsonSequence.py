@@ -4,8 +4,8 @@ from num2words import num2words
 PREFIX = " is the "
 SUFFIX = " letter"
 REPR_FORWARD = " in this sentence, not counting commas and spaces"
-# delete "in this sentence"?
-REPR_BACKWARD = "Not counting commas and spaces, backwards "
+# (..."in this sentence")?
+REPR_BACKWARD = "Not counting commas and spaces, in this sentence backwards "
 
 
 def n2w(n):
@@ -19,7 +19,7 @@ def n2w(n):
     return os.replace(", ", "").replace(" ", "").replace("-", "")
 
 
-class ReferralType(Enum):
+class Refer(Enum):
     """
     Enum for keeping track of where elements refer to relatively to their ordinal representation.
 
@@ -67,11 +67,13 @@ class AronsonSequence:
 
         # Set attributes, save in lower_case
         self.letter = letter.lower()
-        self.elements = elements
+        # get rid of duplicates, make sure order stays the same. Alternative: check for duplicates and raise ValueError
+        seen = set()
+        self.elements = [x for x in elements if not (x in seen or seen.add(x))]
         self.direction = direction
         self.sentence_repr = self._build_string()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
-        self.referral_dict = self._build_referral_dict()
+        self.refer_dict = self._build_refer_dict()
 
     @property
     def display_letter(self):
@@ -85,11 +87,11 @@ class AronsonSequence:
 
     @staticmethod
     def _check_elements(elements):
-        if not elements:
-            raise ValueError("elements must be non-empty")
-        if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements) or len(
-                set(elements)) != len(elements):
-            raise ValueError(f"Invalid elements: {elements}. Must be a list of non-repeating positive integers.")
+        # option not to accept empty list as elements
+        # if not elements:
+        #     raise ValueError("elements must be non-empty")
+        if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements):
+            raise ValueError(f"Invalid elements: {elements}. Must be a list of positive integers.")
 
     @staticmethod
     def _check_letter(letter):
@@ -119,7 +121,7 @@ class AronsonSequence:
         Determines the referral type for a specific index in the sequence.
 
         :param idx: The index of the element in the sequence.
-        :return: A value from `ReferralType` indicating the referral type.
+        :return: A value from `Refer` indicating the referral type.
         """
         target_idx = idx - 1
         rep = n2w(idx)
@@ -129,13 +131,13 @@ class AronsonSequence:
             pos = self.sentence[::-1].find(rep[::-1])
 
         if target_idx < pos:
-            return ReferralType.BACKWARD
+            return Refer.BACKWARD
         elif pos <= target_idx < pos + len(rep):
-            return ReferralType.SELF
+            return Refer.SELF
         else:
-            return ReferralType.FORWARD
+            return Refer.FORWARD
 
-    def _build_referral_dict(self):
+    def _build_refer_dict(self):
         """
         Builds the referral dictionary that maps each element to its corresponding referral type.
 
@@ -143,14 +145,14 @@ class AronsonSequence:
         """
         return {idx: self._get_referral_type(idx) for idx in self.elements}
 
-    def _update_referral_dict(self, new_elements):
+    def _update_refer_dict(self, new_elements):
         """
         Updates the referral dictionary with new elements.
 
         :param new_elements: A list of new elements to add to the dictionary.
         """
         # no key duplicities- no overwrites
-        self.referral_dict.update({
+        self.refer_dict.update({
             idx: self._get_referral_type(idx) for idx in new_elements
         })
 
@@ -160,7 +162,7 @@ class AronsonSequence:
 
         :return: True if there are forward referring elements, False otherwise.
         """
-        return any(ref == ReferralType.FORWARD for ref in self.referral_dict.values())
+        return any(ref == Refer.FORWARD for ref in self.refer_dict.values())
 
     def _get_occurrences(self):
         """
@@ -191,7 +193,7 @@ class AronsonSequence:
     # setters
     def set_elements(self, new_elements: list[int], append=False):
         """
-        Setter for the elements of the sequence. Updates the sentence, sentence_repr, and referral_dict.
+        Setter for the elements of the sequence. Updates the sentence, sentence_repr, and refer_dict.
 
         :param new_elements: The new elements for the sequence.
         :param append: Whether to append or replace elements.
@@ -199,17 +201,16 @@ class AronsonSequence:
 
         # check input
         self._check_elements(new_elements)
-
         if append:
             # Append new elements while avoiding duplicates
             self.elements.extend(elem for elem in new_elements if elem not in self.elements)
             self._update_sentence()
-            self._update_referral_dict(new_elements)
+            self._update_refer_dict(new_elements)
         else:
             # Replace elements
             self.elements = new_elements
             self._update_sentence()
-            self.referral_dict = self._build_referral_dict()
+            self.refer_dict = self._build_refer_dict()
 
     def append_elements(self, new_elements: list[int]):
         """
@@ -268,13 +269,13 @@ class AronsonSequence:
         """
         return self.elements
 
-    def get_referral_dict(self):
+    def get_refer_dict(self):
         """
         Getter for the referral dictionary.
 
         :return: The referral dictionary.
         """
-        return self.referral_dict
+        return self.refer_dict
 
     def __repr__(self):
         """
@@ -282,8 +283,12 @@ class AronsonSequence:
 
         :return: The human-readable string representation of the sequence.
         """
+
         # return upper case
         s = self.display_letter + self.sentence_repr[1:]
+        if not self.elements:
+            # The empty sequence is the same in both directions
+            return s
         return s + REPR_FORWARD if self.direction == Direction.FORWARD else REPR_BACKWARD + s
 
     def __eq__(self, other):

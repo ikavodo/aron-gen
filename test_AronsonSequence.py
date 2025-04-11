@@ -1,6 +1,6 @@
 import unittest
 from num2words import num2words
-from AronsonSequence import n2w, AronsonSequence, PREFIX, SUFFIX, ReferralType, Direction, REPR_FORWARD, \
+from AronsonSequence import n2w, AronsonSequence, PREFIX, SUFFIX, Refer, Direction, REPR_FORWARD, \
     REPR_BACKWARD  # Adjust your_module as needed
 
 
@@ -22,15 +22,31 @@ class AronsonSequenceTests(unittest.TestCase):
 
         # Invalid elements
         invalid_elements_list = [
-            [],  # empty list
             [1, 'x'],  # contains non-int
             [0, 1],  # contains non-positive
-            [1, 1]  # contains duplicates
         ]
         for invalid_elements in invalid_elements_list:
             with self.subTest(elements=invalid_elements):
                 with self.assertRaises(ValueError):
                     AronsonSequence('t', invalid_elements, Direction.FORWARD)
+
+    def test_construction_duplicate_elements(self):
+        duplicate_elements_list = [
+            ([1, 1, 2], [1, 2]),
+            ([1, 2, 1], [1, 2]),
+            ([2, 1, 1], [2, 1]),
+            ([2, 1, 2], [2, 1])
+        ]
+
+        for elements, expected in duplicate_elements_list:
+            with self.subTest(elements=elements):
+                seq = AronsonSequence('t', elements, Direction.FORWARD)
+                self.assertEqual(seq.get_elements(), expected)
+
+    def test_construction_empty(self):
+        seq1 = AronsonSequence('T', [], Direction.FORWARD)
+        seq2 = AronsonSequence('T', [], Direction.BACKWARD)
+        self.assertEqual(seq1.elements, seq2.elements)
 
     def test_repr(self):
         # test that human representation is correct
@@ -43,6 +59,12 @@ class AronsonSequenceTests(unittest.TestCase):
         for elem in seq.get_elements():
             self.assertIn(num2words(elem, ordinal=True), str(seq))
         self.assertIn(REPR_BACKWARD, repr(seq))
+
+    def test_repr_empty(self):
+        seq1 = AronsonSequence('T', [], Direction.FORWARD)
+        seq2 = AronsonSequence('T', [], Direction.BACKWARD)
+        # same representation
+        self.assertEqual(repr(seq1), repr(seq2))
 
     def test_sentence(self):
         # test that the internal sentence is correct, use something with hyphen
@@ -72,6 +94,8 @@ class AronsonSequenceTests(unittest.TestCase):
             # forward referring in both directions
             (AronsonSequence('t', [19, 100], Direction.FORWARD), True),
             (AronsonSequence('t', [19, 100], Direction.BACKWARD), True),
+            (AronsonSequence('T', [], Direction.FORWARD), False),
+            (AronsonSequence('T', [], Direction.BACKWARD), False),
         ]
 
         for seq, expected in test_cases:
@@ -89,8 +113,21 @@ class AronsonSequenceTests(unittest.TestCase):
         # problem in backwards case. Why?
         for seq, expected in test_cases:
             with self.subTest(seq=seq):
-                ref_vals = set(seq.get_referral_dict().values())
-                self.assertEqual(ref_vals, set(ReferralType))
+                ref_vals = set(seq.get_refer_dict().values())
+                self.assertEqual(ref_vals, set(Refer))
+
+    def test_refer_empty(self):
+        # check that refer_dictionaries are empty
+        test_cases = [
+            # all referring types- BACKWARD, SELF, BACKWARD, SELF, FORWARD
+            (AronsonSequence('t', [], Direction.FORWARD), {}),
+            (AronsonSequence('t', [], Direction.BACKWARD), {})
+        ]
+
+        for seq, expected in test_cases:
+            with self.subTest(seq=seq):
+                ref = seq.get_refer_dict()
+                self.assertEqual(ref, expected)
 
     def test_is_correct(self):
         test_cases = [
@@ -115,6 +152,9 @@ class AronsonSequenceTests(unittest.TestCase):
             # false
             (AronsonSequence('t', [19, 100], Direction.FORWARD), False),
             (AronsonSequence('t', [19, 100], Direction.BACKWARD), False),
+
+            (AronsonSequence('t', [], Direction.FORWARD), True),
+            (AronsonSequence('t', [], Direction.BACKWARD), True),
         ]
 
         for seq, expected in test_cases:
@@ -128,7 +168,9 @@ class AronsonSequenceTests(unittest.TestCase):
             (AronsonSequence('l', [23, 1], Direction.FORWARD), True),
             (AronsonSequence('l', [1], Direction.FORWARD), False),
             (AronsonSequence('j', [24], Direction.BACKWARD), True),
-            (AronsonSequence('l', [6], Direction.BACKWARD), False)
+            (AronsonSequence('l', [6], Direction.BACKWARD), False),
+            (AronsonSequence('t', [], Direction.FORWARD), False),
+            (AronsonSequence('t', [], Direction.BACKWARD), False),
         ]
 
         for seq, expected in test_cases:
@@ -170,15 +212,31 @@ class AronsonSequenceTests(unittest.TestCase):
         # Ensure original elements (1, 2) remain and new elements (5, 6) are added in correct order
         self.assertEqual(sorted(duplicates), seq.get_elements())
 
-    def test_set_elements_empty(self):
+    def test_set_elements_empty_append(self):
         seq = AronsonSequence('t', [1, 2], Direction.FORWARD)
+        seq.set_elements([], append=True)
+        # does nothing
+        self.assertEqual(seq.get_elements(), [1, 2])
+        seq.set_elements([], append=False)
+        self.assertEqual(seq.get_elements(), [])
+        # now check starting with empty list
 
-        # Test setting elements with an empty list
-        # Make sure throws ValueError
-        for append_flag in [True, False]:
-            with self.subTest(append=append_flag):
-                with self.assertRaises(ValueError):
-                    seq.set_elements([], append_flag)
+    def test_set_elements_empty_start(self):
+        seq1 = AronsonSequence('t', [], Direction.FORWARD)
+        seq1.set_elements([], append=True)
+        # does nothing
+        self.assertEqual(seq1.get_elements(), [])
+        # appending to empty list is equivalent to setting without append
+        seq1.set_elements([1, 2], append=True)
+        seq2 = AronsonSequence('t', [1, 2, 4], Direction.FORWARD)
+        seq2.set_elements(seq2.get_elements()[:-1], append=False)
+        self.assertEqual(seq1.get_elements(), seq2.get_elements())
+
+    def test_set_string_elements(self):
+        seq = AronsonSequence('t', [1, 2, 3], Direction.FORWARD)
+        # Ensure it raises a ValueError because strings should not be allowed
+        with self.assertRaises(ValueError):
+            seq.set_elements(['a', 'b', 'c'], append=True)
 
     def test_cpy(self):
         seq = AronsonSequence('t', [1, 2], Direction.FORWARD)
@@ -190,6 +248,7 @@ class AronsonSequenceTests(unittest.TestCase):
 
     def test_append_element_wrapper(self):
         seq = AronsonSequence('t', [1, 2], Direction.FORWARD)
+        # can use copy now
         seq_cpy = seq.copy()
         seq.set_elements([3, 4], append=True)
         # check these two do the same thing
@@ -200,12 +259,20 @@ class AronsonSequenceTests(unittest.TestCase):
 
     def test_iter_and_getitem(self):
         seq = AronsonSequence('t', [5, 6, 7], Direction.FORWARD)
-        self.assertEqual(list(seq), [5, 6, 7])
+        self.assertEqual(list(seq), seq.get_elements())
         self.assertEqual(seq[1], 6)
+        seq.set_elements([], append=False)
+        self.assertEqual(list(seq), seq.get_elements())
+        with self.assertRaises(IndexError):
+            z = seq[0]
+            # never reached
+            print(z)
 
     def test_len(self):
         seq = AronsonSequence('x', [10, 20], Direction.FORWARD)
         self.assertEqual(len(seq), 2)
+        seq.set_elements([], append=False)
+        self.assertEqual(len(seq), 0)
 
     def test_eq_and_hash(self):
         a = AronsonSequence('z', [1, 2], Direction.FORWARD)
@@ -222,6 +289,11 @@ class AronsonSequenceTests(unittest.TestCase):
         self.assertNotEqual(hash(a), hash(c))
         self.assertNotEqual(hash(a), hash(d))
         self.assertNotEqual(hash(a), hash(e))
+        a.set_elements([], append=False)
+        b.set_elements([], append=False)
+        d.set_elements([], append=False)
+        self.assertEqual(a, b)
+        self.assertNotEqual(a, d)
 
     def test_large_sequence(self):
         # Create a very large sequence
@@ -239,16 +311,11 @@ class AronsonSequenceTests(unittest.TestCase):
         # First set to other direction
         seq.flip_direction()
         seq.set_elements([7, 8], append=True)
-
+        last_elements = seq.get_elements()[::-1][:2]
+        self.assertIn(''.join(n2w(elem) for elem in last_elements), seq.get_sentence())
         # Now check if the order of elements is consistent
         self.assertEqual(seq.get_sentence(),
                          AronsonSequence('t', [1, 2, 3, 4, 5, 6, 7, 8], Direction.BACKWARD).get_sentence())
-
-    def test_string_elements(self):
-        seq = AronsonSequence('t', [1, 2, 3], Direction.FORWARD)
-        # Ensure it raises a ValueError because strings should not be allowed
-        with self.assertRaises(ValueError):
-            seq.set_elements(['a', 'b', 'c'], append=True)
 
     def test_is_hashable(self):
         seq = AronsonSequence('t', [1, 2, 3], Direction.FORWARD)
@@ -261,6 +328,7 @@ class AronsonSequenceTests(unittest.TestCase):
         seq = AronsonSequence('t', [1, 2, 3], Direction.FORWARD)
         # make sure display_letter() method works as expected
         self.assertNotEqual(seq.get_letter(), 't')
+
 
 if __name__ == '__main__':
     unittest.main()

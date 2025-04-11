@@ -1,8 +1,11 @@
 from enum import Enum
 from num2words import num2words
 
-STR_START = " is the "
-STR_END = " letter"
+PREFIX = " is the "
+SUFFIX = " letter"
+REPR_FORWARD = " in this sentence, not counting commas and spaces"
+# delete "in this sentence"?
+REPR_BACKWARD = "Not counting commas and spaces, backwards "
 
 
 def n2w(n):
@@ -29,23 +32,30 @@ class ReferralType(Enum):
     FORWARD = 3
 
 
+class Direction(Enum):
+    """
+    Direction by which ordinals refer to indices in the string representation of the sequence
+    FORWARD: left to right
+    BACKWARD: right to left
+    """
+    FORWARD = 1
+    BACKWARD = 2
+
+
 class AronsonSequence:
     """
     Represents an Aronson sequence, which is a sequence of elements where each element refers to the ordinal of a letter
     in a string that describes the letter's position in the sequence.
 
-    :param letter: The letter used for the sequence.
-    :param elements: A list of elements in the sequence.
-    :param forward: Whether the sequence is generated in the forward direction (True) or reversed (False).
     """
 
-    def __init__(self, letter: str, elements: list[int], forward: bool):
+    def __init__(self, letter: str, elements: list[int], direction: Direction):
         """
         Initializes the AronsonSequence with the given letter, elements, and direction.
 
         :param letter: The letter used for the sequence.
         :param elements: A list of elements in the sequence.
-        :param forward: Whether the sequence is generated in the forward direction.
+        :param direction: Whether the sequence is generated forward or backward
         """
         # Validate letter
         self._check_letter(letter)
@@ -53,28 +63,30 @@ class AronsonSequence:
         # Validate elements
         self._check_elements(elements)
 
-        # If I put this in _check_elements()-> append_elements([]) raises ValueError
-        if not elements:
-            raise ValueError("elements list cannot be empty.")
+        self._check_direction(direction)
 
-        self._check_direction(forward)
-
-        # Set attributes
+        # Set attributes, save in lower_case
         self.letter = letter.lower()
         self.elements = elements
-        self.forward = forward
+        self.direction = direction
         self.sentence_repr = self._build_string()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
         self.referral_dict = self._build_referral_dict()
 
+    @property
+    def display_letter(self):
+        return self.letter.upper()
+
     @staticmethod
-    def _check_direction(forward):
-        # Validate forward
-        if not isinstance(forward, bool):
-            raise ValueError(f"Invalid forward value: {forward}. Must be a boolean.")
+    def _check_direction(direction: Direction):
+        # Validate direction
+        if not isinstance(direction, Direction):
+            raise ValueError(f"Invalid direction value: {direction}. Must be a Direction.")
 
     @staticmethod
     def _check_elements(elements):
+        if not elements:
+            raise ValueError("elements must be non-empty")
         if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements) or len(
                 set(elements)) != len(elements):
             raise ValueError(f"Invalid elements: {elements}. Must be a list of non-repeating positive integers.")
@@ -99,8 +111,8 @@ class AronsonSequence:
 
         :return: The string representation of the sequence.
         """
-        idx_ord = self.elements if self.forward else self.elements[::-1]
-        return f"{self.letter + STR_START}{', '.join(num2words(i, ordinal=True) for i in idx_ord)}{STR_END}"
+        idx_ord = self.elements if self.direction == Direction.FORWARD else self.elements[::-1]
+        return f"{self.letter + PREFIX}{', '.join(num2words(i, ordinal=True) for i in idx_ord)}{SUFFIX}"
 
     def _get_referral_type(self, idx):
         """
@@ -111,7 +123,7 @@ class AronsonSequence:
         """
         target_idx = idx - 1
         rep = n2w(idx)
-        if self.forward:
+        if self.direction == Direction.FORWARD:
             pos = self.sentence.find(rep)
         else:
             pos = self.sentence[::-1].find(rep[::-1])
@@ -152,20 +164,21 @@ class AronsonSequence:
 
     def _get_occurrences(self):
         """
-        Returns the 1-based positions of `self.letter` in the sentence, respecting direction (forward or reversed).
+        Returns the 1-based positions of `self.letter` in the sentence, respecting direction.
 
         :return: A list of positions where the letter occurs.
         """
-        s = self.sentence if self.forward else self.sentence[::-1]
-        return [i + 1 for i, char in enumerate(s) if char == self.letter]
+        s = self.sentence if self.direction == Direction.FORWARD else self.sentence[::-1]
+        return {i + 1 for i, char in enumerate(s) if char == self.letter}
 
-    def is_self_contained(self):
+    # Add notion of prefix_complete (up to SUFFIX)
+    def is_complete(self):
         """
         Checks if the sequence is self-contained, i.e., the positions of the letter in the sentence match the elements.
 
         :return: True if the sequence is self-contained, False otherwise.
         """
-        return self._get_occurrences() == self.elements
+        return self._get_occurrences() == set(self.elements)
 
     def is_correct(self):
         """
@@ -183,9 +196,6 @@ class AronsonSequence:
         :param new_elements: The new elements for the sequence.
         :param append: Whether to append or replace elements.
         """
-        # perhaps unnecessary
-        if not new_elements and not append:
-            raise ValueError("Cannot set an empty sequence.")
 
         # check input
         self._check_elements(new_elements)
@@ -216,21 +226,24 @@ class AronsonSequence:
         :param letter: The new letter to set for the sequence.
         """
         self._check_letter(letter)
-        self.letter = letter
+        self.letter = letter.lower()
         # need to update sentence
         self._update_sentence()
 
     def flip_direction(self):
         """
-        Flips the direction of the sequence (from forward to reversed or vice versa).
+        Flips the direction of the sequence
 
         Updates the sentence accordingly.
         """
-        self.forward = not self.forward
+        self.direction = Direction.BACKWARD if self.direction == Direction.FORWARD else Direction.FORWARD
         # need to update sentence
         self._update_sentence()
 
     # getters
+    def get_letter(self):
+        return self.display_letter
+
     def get_sentence(self):
         """
         Getter for the string representation of the sequence.
@@ -241,11 +254,11 @@ class AronsonSequence:
 
     def get_direction(self):
         """
-        Getter for the direction of the sequence (forward or not).
+        Getter for the direction of the sequence
 
-        :return: True if forward, False otherwise.
+        :return: Direction.
         """
-        return self.forward
+        return self.direction
 
     def get_elements(self):
         """
@@ -269,7 +282,9 @@ class AronsonSequence:
 
         :return: The human-readable string representation of the sequence.
         """
-        return self.sentence_repr
+        # return upper case
+        s = self.display_letter + self.sentence_repr[1:]
+        return s + REPR_FORWARD if self.direction == Direction.FORWARD else REPR_BACKWARD + s
 
     def __eq__(self, other):
         """
@@ -278,14 +293,14 @@ class AronsonSequence:
         :param other: The other AronsonSequence to compare with.
         :return: True if the sequences are equal, False otherwise.
         """
-        return isinstance(other, AronsonSequence) and self.elements == other.elements and self.letter == other.letter \
-            and self.forward == other.forward
+        return isinstance(other, AronsonSequence) and self.elements == other.get_elements() and \
+            self.display_letter == other.get_letter() and self.direction == other.get_direction()
 
     def copy(self):
         return AronsonSequence(
             self.letter,
             self.elements.copy(),  # avoid sharing mutable state
-            self.forward
+            self.direction
         )
 
     def __hash__(self):
@@ -294,7 +309,7 @@ class AronsonSequence:
 
         :return: A hash value for the sequence.
         """
-        return hash((tuple(self.elements), self.letter, self.forward))
+        return hash((tuple(self.elements), self.letter, self.direction))
 
     def __iter__(self):
         """

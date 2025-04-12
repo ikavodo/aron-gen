@@ -3,8 +3,8 @@ from num2words import num2words
 
 PREFIX = " is the "
 SUFFIX = " letter"
+# in parens?
 REPR_FORWARD = " in this sentence, not counting commas and spaces"
-# (..."in this sentence")?
 REPR_BACKWARD = "Not counting commas and spaces, in this sentence backwards "
 
 
@@ -44,9 +44,11 @@ class Direction(Enum):
 
 class AronsonSequence:
     """
-    Represents an Aronson sequence, which is a sequence of elements where each element refers to the ordinal of a letter
-    in a string that describes the letter's position in the sequence.
-
+    Represents an Aronson sequence, which is a sequence of elements with each element referring to an ordinal appearing
+    within a generated sentence of form:
+    f"{letter} is the {ordinal(elements[0])}, {ordinal(elements[1])}... letter" if direction is Direction.FORWARD.
+    Otherwise:
+    f"{letter} is the {ordinal(elements[-1])}, {ordinal(elements[-2])}... letter"
     """
 
     def __init__(self, letter: str, elements: list[int], direction: Direction):
@@ -54,8 +56,8 @@ class AronsonSequence:
         Initializes the AronsonSequence with the given letter, elements, and direction.
 
         :param letter: The letter used for the sequence.
-        :param elements: A list of elements in the sequence.
-        :param direction: Whether the sequence is generated forward or backward
+        :param elements: A list of elements (positive integers) in the sequence.
+        :param direction: of the sequence
         """
         # Validate letter
         self._check_letter(letter)
@@ -71,30 +73,47 @@ class AronsonSequence:
         seen = set()
         self.elements = [x for x in elements if not (x in seen or seen.add(x))]
         self.direction = direction
-        self.sentence_repr = self._build_string()
+        self.sentence_repr = self._build_sentence_repr()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
         self.refer_dict = self._build_refer_dict()
 
     @property
     def display_letter(self):
+        """
+        upper letter for representation
+        :return:
+        """
+
         return self.letter.upper()
 
     @staticmethod
     def _check_direction(direction: Direction):
+        """
+        Make sure direction is a Direction Enum Type
+        :param direction:
+        :return:
+        """
         # Validate direction
         if not isinstance(direction, Direction):
             raise ValueError(f"Invalid direction value: {direction}. Must be a Direction.")
 
     @staticmethod
     def _check_elements(elements):
-        # option not to accept empty list as elements
-        # if not elements:
-        #     raise ValueError("elements must be non-empty")
+        """
+        Make sure elements is a list with positive integers. Duplicates are allowed but filtered out
+        :param elements: of sequence
+        :return:
+        """
         if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements):
             raise ValueError(f"Invalid elements: {elements}. Must be a list of positive integers.")
 
     @staticmethod
     def _check_letter(letter):
+        """
+        check letter input is single alpha character
+        :param letter:
+        :return:
+        """
         if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
             raise ValueError(f"Invalid letter: {letter!r}. Must be a single alphabetic character.")
 
@@ -104,38 +123,42 @@ class AronsonSequence:
 
         This method constructs the `sentence_repr` and the `sentence` attributes.
         """
-        self.sentence_repr = self._build_string()
+        self.sentence_repr = self._build_sentence_repr()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
 
-    def _build_string(self):
+    def _build_sentence_repr(self):
         """
         Returns the human-readable string representation of the AronsonSequence.
 
         :return: The string representation of the sequence.
         """
-        idx_ord = self.elements if self.direction == Direction.FORWARD else self.elements[::-1]
-        return f"{self.letter + PREFIX}{', '.join(num2words(i, ordinal=True) for i in idx_ord)}{SUFFIX}"
+        elem_ord = self.elements if self.direction == Direction.FORWARD else self.elements[::-1]
+        return f"{self.letter + PREFIX}{', '.join(num2words(i, ordinal=True) for i in elem_ord)}{SUFFIX}".replace("  ",
+                                                                                                                  " ")
 
-    def _get_referral_type(self, idx):
+    def _get_referral(self, elem):
         """
         Determines the referral type for a specific index in the sequence.
 
-        :param idx: The index of the element in the sequence.
-        :return: A value from `Refer` indicating the referral type.
+        :param elem: The index of the element in the sequence.
+        :return: pos: position of ordinal representation within string
+                ref: where element points to within the string compared to the position 
         """
-        target_idx = idx - 1
-        rep = n2w(idx)
+        target_elem = elem - 1
+        rep = n2w(elem)
         if self.direction == Direction.FORWARD:
             pos = self.sentence.find(rep)
         else:
+            # backward case- should position be where flipped word starts?
             pos = self.sentence[::-1].find(rep[::-1])
 
-        if target_idx < pos:
-            return Refer.BACKWARD
-        elif pos <= target_idx < pos + len(rep):
-            return Refer.SELF
+        if target_elem < pos:
+            ref = Refer.BACKWARD
+        elif pos <= target_elem < pos + len(rep):
+            ref = Refer.SELF
         else:
-            return Refer.FORWARD
+            ref = Refer.FORWARD
+        return pos, ref
 
     def _build_refer_dict(self):
         """
@@ -143,7 +166,7 @@ class AronsonSequence:
 
         :return: A dictionary mapping each element to its referral type.
         """
-        return {idx: self._get_referral_type(idx) for idx in self.elements}
+        return {elem: self._get_referral(elem) for elem in self.elements}
 
     def _update_refer_dict(self, new_elements):
         """
@@ -153,7 +176,7 @@ class AronsonSequence:
         """
         # no key duplicities- no overwrites
         self.refer_dict.update({
-            idx: self._get_referral_type(idx) for idx in new_elements
+            elem: self._get_referral(elem) for elem in new_elements
         })
 
     def has_forward_referring(self):
@@ -162,7 +185,7 @@ class AronsonSequence:
 
         :return: True if there are forward referring elements, False otherwise.
         """
-        return any(ref == Refer.FORWARD for ref in self.refer_dict.values())
+        return any(ref == Refer.FORWARD for _, ref in self.refer_dict.values())
 
     def _get_occurrences(self):
         """
@@ -243,6 +266,9 @@ class AronsonSequence:
 
     # getters
     def get_letter(self):
+        """
+        :return: letter in upper case
+        """
         return self.display_letter
 
     def get_sentence(self):

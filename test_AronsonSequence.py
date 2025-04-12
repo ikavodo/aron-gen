@@ -113,8 +113,24 @@ class AronsonSequenceTests(unittest.TestCase):
         # problem in backwards case. Why?
         for seq, expected in test_cases:
             with self.subTest(seq=seq):
-                ref_vals = set(seq.get_refer_dict().values())
-                self.assertEqual(ref_vals, set(Refer))
+                refs = set(ref for _, ref in seq.get_refer_dict().values())
+                self.assertEqual(refs, set(Refer))
+
+    def test_ref_dict_pos(self):
+        # check that refer_dictionaries are correct
+        test_cases = [
+            # all referring types- BACKWARD, SELF, BACKWARD, SELF, FORWARD
+            (AronsonSequence('t', [1], Direction.FORWARD), True),
+            (AronsonSequence('t', [1], Direction.BACKWARD), True)
+        ]
+        # problem in backwards case. Why?
+        for seq, expected in test_cases:
+            with self.subTest(seq=seq):
+                rel_pos = len(PREFIX.replace(" ", "")) + 1 if seq.get_direction() == Direction.FORWARD \
+                    else len(SUFFIX.replace(" ", ""))
+                for pos, _ in seq.get_refer_dict().values():
+                    # not sure this will work in backward case?
+                    self.assertEqual(pos, rel_pos)
 
     def test_refer_empty(self):
         # check that refer_dictionaries are empty

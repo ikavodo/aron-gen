@@ -1,5 +1,5 @@
 from itertools import islice, cycle
-from AronsonSequence import AronsonSequence, n2w, PREFIX, SUFFIX, ReferralType, Direction
+from AronsonSequence import AronsonSequence, n2w, PREFIX, SUFFIX, Refer, Direction
 from typing import Callable
 
 # upper bound for searching for singleton Aronson sequences
@@ -41,7 +41,7 @@ class GenError(Exception):
 
     def __str__(self):
         if self.forward_ref:
-            suffix = f"has type {ReferralType.FORWARD}"
+            suffix = f"has type {Refer.FORWARD}"
         elif self.len:
             suffix = f"could not generate {self.len} elements"
         else:
@@ -50,19 +50,13 @@ class GenError(Exception):
 
 
 # This class currently has one goal: enumerating all sequences within set with length up to n
-# this should be done in iterations using four generation rules: backwards (gen_sequence), forwards (
-# Others can be extended by one element using Aronson algorithm (backward-refer).
-# For example: enumerate() -> AronsonSequence('t', [1], True), AronsonSequence('t', [4], True),
-# AronsonSequence('t', [11], True)
-# Use partition of referring to make equivalence sets?
-# But how to make sure we generate *all* sequences of length n without reverting to brute-force search?
-# Need to encode logic somehow.
-# Be allowed to find intersection of AronsonSets with different letters?
+# this should be done in iterations using four generation rules: gen_backwards(),
+# gen_forwards() gen_substite(), gen_subset()
+# Take a look at the check_iters.txt file to see expected output per iteration
 class AronsonSet:
     """
-    Class for generating AronsonSequence objects. Is equivalent to sets A_x(->) or A_x(<-) where x is some letter.
-    Provides methods for generating Aronson sequences and verifying their correctness.
-    AronsonSequence is primitive class
+    Class for generating all correct AronsonSequence objects up to some length with regard to set letter and direction.
+    Is equivalent to sets A_x(->) or A_x(<-) where x is some letter (see https://ikavodo.github.io/aronson-1/)
     :param letter: The letter used for generating sequences.
     :param direction: sequences generation direction.
     """

@@ -1,9 +1,13 @@
 from enum import Enum
 from num2words import num2words
+from typing import Optional
 
 PREFIX = " is the "
 SUFFIX = " letter"
-# in parens?
+# take into account letter at beginning of sentence
+LEN_PREFIX = len(PREFIX.replace(" ", "")) + 1
+LEN_SUFFIX = len(SUFFIX.replace(" ", ""))
+
 REPR_FORWARD = " in this sentence, not counting commas and spaces"
 REPR_BACKWARD = "Not counting commas and spaces, in this sentence backwards "
 
@@ -51,7 +55,7 @@ class AronsonSequence:
     f"{letter} is the {ordinal(elements[-1])}, {ordinal(elements[-2])}... letter"
     """
 
-    def __init__(self, letter: str, elements: list[int], direction: Direction):
+    def __init__(self, letter: str, elements: Optional[list[int]] = None, direction: Direction = Direction.FORWARD):
         """
         Initializes the AronsonSequence with the given letter, elements, and direction.
 
@@ -59,19 +63,21 @@ class AronsonSequence:
         :param elements: A list of elements (positive integers) in the sequence.
         :param direction: of the sequence
         """
-        # Validate letter
-        self._check_letter(letter)
-
-        # Validate elements
+        elements = elements if elements is not None else []
         self._check_elements(elements)
-
+        self._check_letter(letter)
         self._check_direction(direction)
+
+        # Deduplicate while preserving order
+        seen = set()
+        self.elements = [x for x in elements if not (x in seen or seen.add(x))]
+        # set to 0 if not self.elements?
+        self.prefix = max(self.elements) if self.elements else 0
 
         # Set attributes, save in lower_case
         self.letter = letter.lower()
         # get rid of duplicates, make sure order stays the same. Alternative: check for duplicates and raise ValueError
-        seen = set()
-        self.elements = [x for x in elements if not (x in seen or seen.add(x))]
+
         self.direction = direction
         self.sentence_repr = self._build_sentence_repr()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
@@ -104,6 +110,7 @@ class AronsonSequence:
         :param elements: of sequence
         :return:
         """
+
         if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements):
             raise ValueError(f"Invalid elements: {elements}. Must be a list of positive integers.")
 
@@ -136,7 +143,7 @@ class AronsonSequence:
         return f"{self.letter + PREFIX}{', '.join(num2words(i, ordinal=True) for i in elem_ord)}{SUFFIX}".replace("  ",
                                                                                                                   " ")
 
-    def _get_referral(self, elem):
+    def _get_refer_val(self, elem):
         """
         Determines the referral type for a specific index in the sequence.
 
@@ -151,14 +158,15 @@ class AronsonSequence:
         else:
             # backward case- should position be where flipped word starts?
             pos = self.sentence[::-1].find(rep[::-1])
-
+        end = pos + len(rep)
         if target_elem < pos:
             ref = Refer.BACKWARD
-        elif pos <= target_elem < pos + len(rep):
+        elif pos <= target_elem < end:
             ref = Refer.SELF
         else:
             ref = Refer.FORWARD
-        return pos, ref
+        # return position of ordinal within string representation as a tuple.
+        return range(pos, end), ref
 
     def _build_refer_dict(self):
         """
@@ -166,7 +174,7 @@ class AronsonSequence:
 
         :return: A dictionary mapping each element to its referral type.
         """
-        return {elem: self._get_referral(elem) for elem in self.elements}
+        return {x: self._get_refer_val(x) for x in self.elements}
 
     def _update_refer_dict(self, new_elements):
         """
@@ -176,7 +184,7 @@ class AronsonSequence:
         """
         # no key duplicities- no overwrites
         self.refer_dict.update({
-            elem: self._get_referral(elem) for elem in new_elements
+            x: self._get_refer_val(x) for x in new_elements
         })
 
     def has_forward_referring(self):
@@ -187,13 +195,15 @@ class AronsonSequence:
         """
         return any(ref == Refer.FORWARD for _, ref in self.refer_dict.values())
 
-    def _get_occurrences(self):
+    def _get_occurrences(self, idx=None):
         """
         Returns the 1-based positions of `self.letter` in the sentence, respecting direction.
 
         :return: A list of positions where the letter occurs.
         """
         s = self.sentence if self.direction == Direction.FORWARD else self.sentence[::-1]
+        if idx is not None:
+            s = s[:idx]
         return {i + 1 for i, char in enumerate(s) if char == self.letter}
 
     # Add notion of prefix_complete (up to SUFFIX)
@@ -205,6 +215,25 @@ class AronsonSequence:
         """
         return self._get_occurrences() == set(self.elements)
 
+    def is_prefix_complete(self):
+        """
+        Checks if substring up to largest ordinal is complete, i.e.,
+        the positions of the letter in the sentence match the elements.
+
+        :return: True if the sequence is prefix-complete, False otherwise.
+        """
+        return self._get_occurrences(idx=self.prefix) == set(self.elements)
+
+    def get_prefix_missing(self):
+        """
+        Used for finding missing occurences of the letter backwards from maximum index
+        :return: True if the sequence is prefix-complete, False otherwise.
+        """
+        return self._get_occurrences(idx=self.prefix).difference(set(self.elements))
+
+    def is_empty(self):
+        return not self.elements
+
     def is_correct(self):
         """
         Verifies if the sequence is valid by checking if all elements occur at the correct positions.
@@ -214,21 +243,29 @@ class AronsonSequence:
         return all(ind in self._get_occurrences() for ind in self.elements)
 
     # setters
-    def set_elements(self, new_elements: list[int], append=False):
+    def set_elements(self, new_elements: list[int] = None, append=False):
         """
         Setter for the elements of the sequence. Updates the sentence, sentence_repr, and refer_dict.
 
         :param new_elements: The new elements for the sequence.
         :param append: Whether to append or replace elements.
         """
-
         # check input
+        new_elements = new_elements if new_elements is not None else []
         self._check_elements(new_elements)
         if append:
-            # Append new elements while avoiding duplicates
-            self.elements.extend(elem for elem in new_elements if elem not in self.elements)
+            if not new_elements:
+                # do nothing, works for None too, is falsy
+                return
+            # doesn't retain order! Make sure no duplicates.
+            seen = set()
+            filtered = [x for x in new_elements if
+                        x not in seen and not seen.add(x) and x not in self.refer_dict.keys()]
+            self.elements.extend(filtered)
+            self.prefix = max(self.elements) if self.elements else None
             self._update_sentence()
-            self._update_refer_dict(new_elements)
+            # ignore repeating elements
+            self._update_refer_dict(filtered)
         else:
             # Replace elements
             self.elements = new_elements
@@ -265,6 +302,18 @@ class AronsonSequence:
         self._update_sentence()
 
     # getters
+    def get_range(self, elem):
+        """
+        given an element, if it is within the sequence, the position of the ordinal representation of the element
+        with the sentence is returned as a range
+        :param elem: to be checked
+        :return: range within which the ordinal representation of this element appears in the sentence
+        """
+        if elem not in self.refer_dict.keys():
+            raise ValueError("Element not in sequence")
+        idx_range, _ = self.refer_dict[elem]
+        return idx_range
+
     def get_letter(self):
         """
         :return: letter in upper case
@@ -302,6 +351,14 @@ class AronsonSequence:
         :return: The referral dictionary.
         """
         return self.refer_dict
+
+    def get_prefix(self):
+        """
+        Getter for the prefix.
+
+        :return: The referral dictionary.
+        """
+        return self.prefix
 
     def __repr__(self):
         """

@@ -92,7 +92,7 @@ class AronsonSet:
         """
         return (
                 seq.get_letter() == self.display_letter and
-                seq.get_direction() == self.direction and self.is_correct(seq)
+                seq.get_direction() == self.direction and seq.is_correct()
         )
 
     def is_complete(self, seq: AronsonSequence):
@@ -103,7 +103,7 @@ class AronsonSet:
         """
         return (
                 seq.get_letter() == self.display_letter and
-                seq.get_direction() == self.direction and self.is_complete(seq)
+                seq.get_direction() == self.direction and seq.is_complete()
         )
 
     def add_sequences(self, seqs: set[AronsonSequence]):
@@ -159,7 +159,8 @@ class AronsonSet:
 
         if len(seq) < n:
             # could not extend sequence up to desired length
-            raise GenError(seq_len=n)
+            # raise GenError(seq_len=n)
+            return set()
         # return set for add_sequences() method
         return {seq}
 
@@ -182,9 +183,9 @@ class AronsonSet:
             # anything in between is affected
             range_of_effect = range(min(r.start for r in ranges), max(r.stop for r in ranges))
             if all(x not in range_of_effect for x in seq.get_elements()):
-                swapped = seq.get_elements()
+                swapped = seq.get_elements().copy()
                 swapped[i], swapped[j] = swapped[j], swapped[i]
-                new_sets.add(swapped)
+                new_sets.add(AronsonSequence(self.letter, swapped, self.direction))
         return new_sets
 
     # Idea: try to generate something at the end of the sequence.
@@ -207,7 +208,7 @@ class AronsonSet:
         new_seqs = set()
         for elem in range(lower_bound, upper_bound):
             seq_cpy = seq.copy()
-            candidate = seq_cpy.append_elements(elem)
+            candidate = seq_cpy.append_elements([elem])
             if self.is_correct(candidate):
                 new_seqs.add(candidate)
         return new_seqs
@@ -233,7 +234,7 @@ class AronsonSet:
             for occ in occurrences:
                 # generate new sequence by appending a missing occurrence
                 seq_cpy = seq.copy()
-                seq_cpy.append_elements(occ)
+                seq_cpy.append_elements([occ])
 
                 # Try fixing the forward-ref element. Notice that candidate == elem at some point, meaning we also
                 # check correctness of elem itself, while also taking into account other possibilities
@@ -266,9 +267,16 @@ class AronsonSet:
                 elif seq.has_forward_referring():
                     cur_seqs.update(self.forward_fix(seq))
                 else:
-                    cur_seqs.update(self.backward_search(seq))
+                    # try:
+                    #     cur_seqs.update(self.backward_search(seq))
+                    # except GenError:
+                    #     # do nothing at the moment, can also choose to ignore
+                    #     pass
+                    if not seq.is_prefix_complete():
+                        cur_seqs.update(self.backward_search(seq))
                     cur_seqs.update(self.backward_generate(1, seq))
                     cur_seqs.update(self.forward_generate(seq))
+
                 # can do this either way
                 cur_seqs.update(self.swap(seq))
 

@@ -1,9 +1,11 @@
-from itertools import islice, cycle
-from AronsonSequence import AronsonSequence, n2w, PREFIX, SUFFIX, Refer, Direction
-from typing import Callable
+from itertools import islice, cycle, combinations, permutations
+from AronsonSequence import AronsonSequence, n2w, Refer, Direction, LEN_PREFIX, LEN_SUFFIX
+from collections import defaultdict
 
 # upper bound for searching for singleton Aronson sequences
 SINGLETON_UPPER = 40
+# approximation of max ordinal lengths per number of bits
+ORD_TABLE = {i: 10 * (i + 1) for i in range(12)}
 
 
 # Exception classes
@@ -12,16 +14,17 @@ class VerificationError(Exception):
     Custom exception raised when the Aronson sequence verification fails.
 
     :param message: The error message to be shown.
-    :param input_sentence: The input data that caused the failure.
+    :param input_seq: The input data that caused the failure.
     """
 
-    def __init__(self, message="Verifier failed", input_sentence=None):
+    def __init__(self, message="Verifier failed", input_seq=None):
         self.message = message
-        self.input_sentence = input_sentence
+        self.input_seq = input_seq
         super().__init__(self.message)
 
     def __str__(self):
-        return f"{self.message}: {self.input_sentence}"
+        # will this show representation of input_seq?
+        return f"{self.message}: {self.input_seq}"
 
 
 class GenError(Exception):
@@ -29,34 +32,24 @@ class GenError(Exception):
         Custom exception raised when generating from the input sequence is impossible.
 
         :param message: The error message to be shown.
-        :param input_sentence: The input data that caused the failure.
+        :param seq_len: expected length of sequence
         """
 
-    def __init__(self, message="Generating failed", input_sentence=None, forward_ref=False, seq_len=None):
+    def __init__(self, message="Generating failed", seq_len=None):
         self.message = message
-        self.input_sentence = input_sentence
-        self.forward_ref = forward_ref
         self.len = seq_len
         super().__init__(self.message)
 
     def __str__(self):
-        if self.forward_ref:
-            suffix = f"has type {Refer.FORWARD}"
-        elif self.len:
-            suffix = f"could not generate {self.len} elements"
-        else:
-            suffix = ""
-        return f"{self.message}: {self.input_sentence} {suffix}"
+        return f"{self.message}: could not generate {self.len} elements"
 
 
-# This class currently has one goal: enumerating all sequences within set with length up to n
-# this should be done in iterations using four generation rules: gen_backwards(),
-# gen_forwards() gen_substite(), gen_subset()
-# Take a look at the check_iters.txt file to see expected output per iteration
+# This class generates correct Aronson sequences via various generation rules.
 class AronsonSet:
     """
-    Class for generating all correct AronsonSequence objects up to some length with regard to set letter and direction.
-    Is equivalent to sets A_x(->) or A_x(<-) where x is some letter (see https://ikavodo.github.io/aronson-1/)
+    Class for generating correct AronsonSequence objects.
+    Notice we have for any instance S this class S ∈ Aₓ(→/←), where x is some letter and arrow refers to
+    direction (see https://ikavodo.github.io/aronson-1/)
     :param letter: The letter used for generating sequences.
     :param direction: sequences generation direction.
     """
@@ -65,7 +58,11 @@ class AronsonSet:
     def __init__(self, letter: str, direction: Direction):
         self.letter = letter.lower()  # Letter used for generating sequences
         self.direction = direction  # Sequence direction
-        self.seen_seqs = set()  # Sequences seen so far. This field may change
+        self.sets_by_iteration = defaultdict(set)
+        self.cur_iter = 0
+        self.seen_seqs = set(AronsonSequence(self.letter, [], self.direction))
+        # Each AronsonSet object contains the matching empty AronsonSequence object
+        self.sets_by_iteration[self.cur_iter] = self.seen_seqs.copy()
 
     @property
     def display_letter(self):
@@ -74,25 +71,17 @@ class AronsonSet:
     @classmethod
     def from_sequence(cls, seq: AronsonSequence):
         """
-        constructor from AronsonSequence
-        :param seq:
-        :return: this instance
+        constructor from AronsonSequence. Good for checking generation rules on a particular sequence
+        :param seq: AronsonSequence
+        :return: instance
         """
+        # (inefficient to construct before checking correctness, change this later)
         obj = cls(seq.get_letter(), seq.get_direction())
-        obj.seen_seqs.add(seq)  # remember which seq generated class
+        if not obj.is_correct(seq):
+            # Let the user know
+            raise VerificationError(input_seq=seq)
+        obj.add_sequences({seq})  # does verification, throws VerificationError if sequence in correct
         return obj
-
-    def _ismember(self, seq: AronsonSequence, conditional: Callable[[AronsonSequence], bool]) -> bool:
-        """
-        helper for conditioning an AronsonSequence with regard to the current AronsonSet instance
-        :param seq: AronsonSequence to be conditioned
-        :param conditional: by which to condition
-        :return: True/False
-        """
-        return (
-                seq.get_letter() == self.display_letter and
-                seq.get_direction() == self.direction and conditional(seq)
-        )
 
     def is_correct(self, seq: AronsonSequence):
         """
@@ -100,7 +89,10 @@ class AronsonSet:
         :param seq: AronsonSequence to be verified
         :return: True/False
         """
-        return self._ismember(seq, AronsonSequence.is_correct)
+        return (
+                seq.get_letter() == self.display_letter and
+                seq.get_direction() == self.direction and self.is_correct(seq)
+        )
 
     def is_complete(self, seq: AronsonSequence):
         """
@@ -108,175 +100,256 @@ class AronsonSet:
         :param seq: AronsonSequence to be checked
         :return: True/False
         """
-        return self._ismember(seq, AronsonSequence.is_complete)
+        return (
+                seq.get_letter() == self.display_letter and
+                seq.get_direction() == self.direction and self.is_complete(seq)
+        )
 
-    def add_sequence(self, seq: AronsonSequence):
+    def add_sequences(self, seqs: set[AronsonSequence]):
         """
         Add a new sequence to set of seen sequences
+        :param seqs:
+        :return:
+        """
+        valid_seqs = {seq for seq in seqs if seq not in self.seen_seqs and self.is_correct(seq)}
+        self.seen_seqs.update(valid_seqs)
+
+    # Don't use this in case there is anything forward-referring, as that element will need to be fixed! Use
+    # forward_fix() for that.
+    @staticmethod
+    def backward_search(seq: AronsonSequence):
+        """
+        Find all occurrences missing in sentence prefix and
         :param seq:
         :return:
         """
-        if seq in self.seen_seqs:
-            # do nothing
-            return
-        if not self.is_correct(seq):
-            raise VerificationError
-        self.seen_seqs.add(seq)
+        # does nothing if sequence is prefix complete!
+        occurrences = seq.get_prefix_missing()
+        return {seq.copy().append_elements(occ) for occ in occurrences}
 
-    def gen_sequence(self, n: int, seq: AronsonSequence) -> AronsonSequence:
+    def _agen(self, seq: AronsonSequence):
         """
-        Generates a new AronsonSequence of length n either from scratch or by extending an existing sequence.
+        Internal generator for backwards-based generation.
 
-        :param n: The length of the desired AronsonSequence.
-        :param seq: An optional input AronsonSequence to extend. If None, a new sequence is generated.
-        :return: A new AronsonSequence object.
+        :param seq: An optional AronsonSequence to generate from.
+        :return: A generator yielding new indices for the sequence.
         """
+        idx = seq.get_prefix() if not seq.is_empty() else 0
+        s = seq.get_sentence()
+        s = s[idx:-LEN_SUFFIX] if self.direction == Direction.FORWARD else s[LEN_PREFIX:-idx][::-1]
+        while True:
+            # generator yields as many indices as required
+            idx_rel = 1 + s.find(self.letter)  # Find the relative position of the letter
+            if idx_rel <= 0:  # Letter not found in string buffer, StopIter
+                break
+            idx += idx_rel
+            yield idx
+            s = s[idx_rel:] + (n2w(idx) if self.direction == Direction.FORWARD else n2w(idx)[::-1])
 
-        # do some error checking here
-        # Use AronsonSequence as seed for generation
-        if not self.is_correct(seq):  # is of correct letter and direction
-            raise VerificationError(input_sentence=str(seq))  # Verifier failed
-        elif seq.has_forward_referring() or seq.is_complete():
-            # can't be extended
-            raise GenError(input_sentence=seq, forward_ref=True)
-        # extend input using generator
+    # For good old well-behaved sequences (no forward referring)
+    def backward_generate(self, n: int, seq: AronsonSequence = None):
+
+        # generate empty AronsonSequence if no argument
+        seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
+        # generate as many new elements as necessary
         new_elements = list(islice(self._agen(seq=seq), n - len(seq)))
         # update sequence
         seq.append_elements(new_elements)
 
-        if len(seq) != n:
-            # could not extend sequence or generate from scratch up to desired length
-            raise GenError(input_sentence=seq, forward_ref=False, seq_len=n)
-        # add to sequences generated so far.
-        # Would be nice to easily retrieve this from a dictionary of AronsonSequences to lists of AronsonSequences!!!
-        self.add_sequence(seq)
-        return seq
+        if len(seq) < n:
+            # could not extend sequence up to desired length
+            raise GenError(seq_len=n)
+        # return set for add_sequences() method
+        return {seq}
 
-    def _agen(self, seq: AronsonSequence = None):
-        """
-        Internal generator for generating indices based on the current sequence or from scratch.
+    # Wrapper for backward_generate() method with default arguments
+    def generate_aronson(self, n: int) -> set[AronsonSequence]:
+        # generates the standard, prefix-complete Aronson sequence
+        return self.backward_generate(n)
 
-        :param seq: An optional AronsonSequence to continue generating from.
-        :return: A generator yielding new indices for the sequence.
+    def swap(self, seq: AronsonSequence = None):
         """
-        if seq:
-            # Start from the last index of the input sequence. Inspect this later
-            idx = max(seq.get_elements())
-            # slice string_repr to start from relevant string buffer, check is correct!
-            s = seq.get_sentence()[idx:-len(SUFFIX.replace(" ", ""))]
+        are allowed to swap two elements if the position to which any element points is unaffected by the swap
+        :param seq: AronsonSequence object
+        :return: set of newly generated sets in which swapping is legal
+        """
+        new_sets = set()
+        seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
+        for i, j in combinations(range(len(seq)), 2):
+            # not generator- is exhumed after one iteration!
+            ranges = [seq.get_range(x) for x in [i, j]]
+            # anything in between is affected
+            range_of_effect = range(min(r.start for r in ranges), max(r.stop for r in ranges))
+            if all(x not in range_of_effect for x in seq.get_elements()):
+                swapped = seq.get_elements()
+                swapped[i], swapped[j] = swapped[j], swapped[i]
+                new_sets.add(swapped)
+        return new_sets
+
+    # Idea: try to generate something at the end of the sequence.
+    # For sequences with only backward and self-referring elements (otherwise use forward_fix)
+    def forward_generate(self, seq: AronsonSequence):
+        """
+        Generate by searching within a bounded search space for valid ordinals to append
+        :param seq:
+        :return:
+        """
+        if seq.is_empty():
+            # for generating all singletons
+            lower_bound = 0
         else:
-            # generate from scratch
-            idx = 0
-            s = (self.letter + PREFIX).replace(" ", "") if self.direction == Direction.FORWARD else \
-                SUFFIX[::-1].replace(" ", "")
-
-        while True:
-            idx_rel = 1 + s.find(self.letter)  # Find the relative position of the letter
-            if idx_rel <= 0:  # Letter not found in string buffer
-                break
-            idx += idx_rel
-            yield idx
-            extend = n2w(idx) if self.direction == Direction.FORWARD else n2w(idx)[::-1]  # Extend the string buffer
-            s = s[idx_rel:] + extend
+            lower_bound = len(seq.get_sentence()[:-LEN_SUFFIX]) if seq.direction == Direction.FORWARD else \
+                len(seq.get_sentence()[LEN_PREFIX:])
+        # maximum length of added ordinal
+        ord_key = len(str((seq.get_prefix())))
+        upper_bound = len(seq.get_sentence()) + ORD_TABLE[ord_key]
+        new_seqs = set()
+        for elem in range(lower_bound, upper_bound):
+            seq_cpy = seq.copy()
+            candidate = seq_cpy.append_elements(elem)
+            if self.is_correct(candidate):
+                new_seqs.add(candidate)
+        return new_seqs
 
     def generate_singletons(self):
         """
         Generates all single-index valid AronsonSequences (singletons).
 
-        :return: A generator yielding valid singleton AronsonSequence objects.
+        :return: set of all correct singleton AronsonSequences
         """
-        for idx in range(1, SINGLETON_UPPER):
-            candidate = AronsonSequence(self.letter, [idx], self.direction)
-            try:
-                # runs verifier on candidate
-                self.add_sequence(candidate)
-                yield candidate
-            except VerificationError:
-                # is not correct
-                continue
+        return self.forward_generate(AronsonSequence(self.letter, [], self.direction))
 
-    def generate_variations(self, n: int, seq: AronsonSequence = None):
-        """
-        Generates variations of AronsonSequences of length n, either from scratch or by modifying an existing sequence.
+    def forward_fix(self, seq: AronsonSequence) -> set[AronsonSequence]:
+        new_seqs = set()
+        elements = seq.get_elements()
+        forward_refs = {x for x in elements if seq.get_ref(x) == Refer.FORWARD and all(
+            y not in range(min(seq.get_range(x)), len(seq.get_sentence())) for y in elements if y != x)}
 
-        :param n: The length of the AronsonSequences to generate.
-        :param seq: An optional input AronsonSequence to modify. If None, sequences are generated from scratch.
-        :return: A generator yielding new AronsonSequence variations.
-        """
-        # update this to take seen_seqs into account!
-        # start from generating original sequence from input, or original Aronson sequence if no such
-        orig = self.gen_sequence(n, seq)
-        # used to generate orig first
-        start_idx = -1
-        # Stack keeps track of sequences generated so far
-        stack = [(orig, start_idx)]
-        while stack:
-            # keep track of index used to generate current sequence
-            cur, cur_idx = stack.pop()
-            yield cur
-            # generate variations
-            for idx in range(cur_idx + 1, n - 1):
-                elements = cur.get_elements()
-                new_seq = AronsonSequence(seq.get_letter(), elements[:idx] + [elements[idx + 1]],
-                                          seq.get_direction())
-                try:
-                    # sequence is of length less than n
-                    extend = self.gen_sequence(n, new_seq)
-                except VerificationError or GenError:
-                    continue  # Skip invalid variations
-                stack.append((extend, idx))
+        occurrences = seq.get_occurences() - forward_refs
 
-    def get_generator(self, n: int, seq: AronsonSequence = None):
-        """
-        Returns a generator for generating variations of AronsonSequences.
+        # probably only one such element, if at all
+        for elem in forward_refs:
+            for occ in occurrences:
+                # generate new sequence by appending a missing occurrence
+                seq_cpy = seq.copy()
+                seq_cpy.append_elements(occ)
 
-        :param n: The length of the sequences to generate.
-        :param seq: An optional input AronsonSequence to modify. If None, sequences are generated from scratch.
-        :return: A generator yielding new AronsonSequence variations.
-        """
-        return self.generate_variations(n, seq)
+                # Try fixing the forward-ref element. Notice that candidate == elem at some point, meaning we also
+                # check correctness of elem itself, while also taking into account other possibilities
+                for candidate in range(min(seq.get_range(elem)), len(seq.get_sentence())):
+                    # shallow copy
+                    new_elements = seq.get_elements().copy()
+                    new_elements[new_elements.index(elem)] = candidate
+                    new_seq = AronsonSequence(seq.letter, new_elements, self.direction)
+                    if self.is_correct(new_seq):
+                        new_seqs.add(new_seq)
 
-    def intersect_aronson_sets(self, other: 'AronsonSet', n: int, seq1: AronsonSequence = None,
-                               seq2: AronsonSequence = None):
-        """
-        Computes the intersection of two AronsonSets by comparing their generated sequences and finding common subsets.
+        return new_seqs
 
-        :param other: The other AronsonSet to intersect with.
-        :param n: The length of the sequences to generate.
-        :param seq1: An optional input AronsonSequence for the first generator.
-        :param seq2: An optional input AronsonSequence for the second generator.
-        :return: A set of common valid AronsonSequences that belong to both sets.
-        """
-        # can use self.seen_seqs and other.seen_seqs here! More elegant
-        self_set, other_set = set(), set()
-        # generate all sequences up to length n from each generator
-        for i in range(n):
-            for seq1, seq2 in zip(self.generate_variations(i, seq1), other.get_generator(i, seq2)):
-                self_set.update(seq1)
-                other_set.update(seq2)
-        # intersection of sequences generated
-        common_subsets = self_set & other_set
+    # backward_search, backward_generate, swap, forward_generate, forward_fix
+    def generate_from_rules(self, n_iterations: int):
+        if n_iterations < 0:
+            raise ValueError("Num of iterations must be non-negative")
 
-        return {subset for subset in common_subsets if self.is_correct(subset) and other.is_correct(subset)}
+        if n_iterations == 0:
+            # do nothing
+            return
 
-    def union(self, other_set: 'AronsonSet', n: int):
-        """
-        Yields all unique AronsonSequences of length n from both sets in alternating order.
+        while self.cur_iter < n_iterations:
+            cur_seqs = set()
+            prev_seqs = self.sets_by_iteration[self.cur_iter]
 
-        :param other_set: The other AronsonSet to union with.
-        :param n: The length of the sequences to generate.
-        :return: A generator yielding unique AronsonSequences from both sets.
-        """
-        seen = set()
-        generators = [self.get_generator(n), other_set.get_generator(n)]
-        for g in cycle(generators):
-            try:
-                seq = next(g)
-                if seq not in seen:
-                    seen.add(seq)
-                    yield seq
-            except StopIteration:
-                break
+            for seq in prev_seqs:
+                if seq.is_empty():
+                    cur_seqs.update(self.generate_singletons())
+                elif seq.has_forward_referring():
+                    cur_seqs.update(self.forward_fix(seq))
+                else:
+                    cur_seqs.update(self.backward_search(seq))
+                    cur_seqs.update(self.backward_generate(1, seq))
+                    cur_seqs.update(self.forward_generate(seq))
+                # can do this either way
+                cur_seqs.update(self.swap(seq))
+
+            self.cur_iter += 1
+            self.sets_by_iteration[self.cur_iter] = cur_seqs
+            # total sets generated so far
+            self.seen_seqs.update(cur_seqs)
 
     def get_seen_seqs(self):
         return self.seen_seqs
+
+    # For generating ground truths up to n=3 and comparing missing sets in other implementation
+    def generate_brute_force(self, n_iterations: int):
+        def generate_unique_lists(n, upper_bound):
+            if n > upper_bound:
+                raise ValueError("n can't be greater than the number of available unique values")
+            return [list(p) for p in permutations(range(1, upper_bound + 1), n)]  # Start from 1
+
+        if n_iterations < 0:
+            raise ValueError("Num of iterations must be non-negative")
+
+        if n_iterations == 0:
+            # do nothing
+            return
+
+        compute_upper = lambda x: self.cur_iter * ORD_TABLE[x] + 2 * max(LEN_PREFIX, LEN_SUFFIX)
+        cur_ord_key = 1  # just in case. For 0 -> upper is
+        while self.cur_iter < n_iterations:
+            # enlarge search range
+            self.cur_iter += 1
+            # grows linearly with iterations
+            upper_bound = self.cur_iter * ORD_TABLE[cur_ord_key] + 2 * max(LEN_PREFIX, LEN_SUFFIX)
+            if upper_bound >= 10 ** (cur_ord_key + 1):
+                cur_ord_key += 1
+            seqs = (AronsonSequence(self.letter, list(l), self.direction) for l in
+                    generate_unique_lists(self.cur_iter, upper_bound))
+            cur_seqs = {s for s in seqs if self.is_correct(s)}
+            self.sets_by_iteration[self.cur_iter] = cur_seqs
+            # total sets generated so far
+            self.seen_seqs.update(cur_seqs)
+
+            #
+            # # do these later
+            # def intersect_aronson_sets(self, other: 'AronsonSet', n: int, seq1: AronsonSequence = None,
+            #                            seq2: AronsonSequence = None):
+            #     """
+            #     Computes the intersection of two AronsonSets by comparing their generated sequences
+            #     and finding common subsets.
+            #
+            #     :param other: The other AronsonSet to intersect with.
+            #     :param n: The length of the sequences to generate.
+            #     :param seq1: An optional input AronsonSequence for the first generator.
+            #     :param seq2: An optional input AronsonSequence for the second generator.
+            #     :return: A set of common valid AronsonSequences that belong to both sets.
+            #     """
+            #     # can use self.seen_seqs and other.seen_seqs here! More elegant
+            #     self_set, other_set = set(), set()
+            #     # generate all sequences up to length n from each generator
+            #     for i in range(n):
+            #         for seq1, seq2 in zip(self.generate_variations(i, seq1), other.get_generator(i, seq2)):
+            #             self_set.update(seq1)
+            #             other_set.update(seq2)
+            #     # intersection of sequences generated
+            #     common_subsets = self_set & other_set
+            #
+            #     return {subset for subset in common_subsets if self.is_correct(subset) and other.is_correct(subset)}
+            #
+            # def union(self, other_set: 'AronsonSet', n: int):
+            #     """
+            #     Yields all unique AronsonSequences of length n from both sets in alternating order.
+            #
+            #     :param other_set: The other AronsonSet to union with.
+            #     :param n: The length of the sequences to generate.
+            #     :return: A generator yielding unique AronsonSequences from both sets.
+            #     """
+            #     seen = set()
+            #     generators = [self.get_generator(n), other_set.get_generator(n)]
+            #     for g in cycle(generators):
+            #         try:
+            #             seq = next(g)
+            #             if seq not in seen:
+            #                 seen.add(seq)
+            #                 yield seq
+            #         except StopIteration:
+            #             break

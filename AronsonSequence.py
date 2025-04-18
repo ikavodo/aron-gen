@@ -2,12 +2,12 @@ from enum import Enum
 from num2words import num2words
 from typing import Optional
 
+# global strings
 PREFIX = " is the "
 SUFFIX = " letter"
 # take into account letter at beginning of sentence
 LEN_PREFIX = len(PREFIX.replace(" ", "")) + 1
 LEN_SUFFIX = len(SUFFIX.replace(" ", ""))
-
 REPR_FORWARD = " in this sentence, not counting commas and spaces"
 REPR_BACKWARD = "Not counting commas and spaces, in this sentence backwards "
 
@@ -64,9 +64,9 @@ class AronsonSequence:
         :param direction: of the sequence
         """
         elements = elements if elements is not None else []
-        self._check_elements(elements)
-        self._check_letter(letter)
-        self._check_direction(direction)
+        self.check_elements(elements)
+        self.check_letter(letter)
+        self.check_direction(direction)
 
         # Deduplicate while preserving order
         seen = set()
@@ -92,8 +92,9 @@ class AronsonSequence:
 
         return self.letter.upper()
 
+    # use these checks also in other class
     @staticmethod
-    def _check_direction(direction: Direction):
+    def check_direction(direction: Direction):
         """
         Make sure direction is a Direction Enum Type
         :param direction:
@@ -104,7 +105,7 @@ class AronsonSequence:
             raise ValueError(f"Invalid direction value: {direction}. Must be a Direction.")
 
     @staticmethod
-    def _check_elements(elements):
+    def check_elements(elements):
         """
         Make sure elements is a list with positive integers. Duplicates are allowed but filtered out
         :param elements: of sequence
@@ -115,7 +116,7 @@ class AronsonSequence:
             raise ValueError(f"Invalid elements: {elements}. Must be a list of positive integers.")
 
     @staticmethod
-    def _check_letter(letter):
+    def check_letter(letter):
         """
         check letter input is single alpha character
         :param letter:
@@ -156,7 +157,7 @@ class AronsonSequence:
         if self.direction == Direction.FORWARD:
             pos = self.sentence.find(rep)
         else:
-            # backward case- should position be where flipped word starts?
+            # backward case, should position be where flipped word starts?
             pos = self.sentence[::-1].find(rep[::-1])
         end = pos + len(rep)
         if target_elem < pos:
@@ -195,7 +196,7 @@ class AronsonSequence:
         """
         return any(ref == Refer.FORWARD for _, ref in self.refer_dict.values())
 
-    def _get_occurrences(self, idx=None):
+    def get_occurrences(self, idx=None):
         """
         Returns the 1-based positions of `self.letter` in the sentence, respecting direction.
 
@@ -213,23 +214,23 @@ class AronsonSequence:
 
         :return: True if the sequence is self-contained, False otherwise.
         """
-        return self._get_occurrences() == set(self.elements)
+        return self.get_occurrences() == set(self.elements)
 
     def is_prefix_complete(self):
         """
-        Checks if substring up to largest ordinal is complete, i.e.,
+        Checks if substring up to the largest ordinal is complete, i.e.,
         the positions of the letter in the sentence match the elements.
 
         :return: True if the sequence is prefix-complete, False otherwise.
         """
-        return self._get_occurrences(idx=self.prefix) == set(self.elements)
+        return self.get_occurrences(idx=self.prefix) == set(self.elements)
 
     def get_prefix_missing(self):
         """
-        Used for finding missing occurences of the letter backwards from maximum index
+        Used for finding missing occurrences of the letter backwards from maximum index
         :return: True if the sequence is prefix-complete, False otherwise.
         """
-        return self._get_occurrences(idx=self.prefix).difference(set(self.elements))
+        return self.get_occurrences(idx=self.prefix).difference(set(self.elements))
 
     def is_empty(self):
         return not self.elements
@@ -240,7 +241,7 @@ class AronsonSequence:
 
         :return: True if the sequence is valid, False otherwise.
         """
-        return all(ind in self._get_occurrences() for ind in self.elements)
+        return all(ind in self.get_occurrences() for ind in self.elements)
 
     # setters
     def set_elements(self, new_elements: list[int] = None, append=False):
@@ -252,7 +253,7 @@ class AronsonSequence:
         """
         # check input
         new_elements = new_elements if new_elements is not None else []
-        self._check_elements(new_elements)
+        self.check_elements(new_elements)
         if append:
             if not new_elements:
                 # do nothing, works for None too, is falsy
@@ -280,13 +281,30 @@ class AronsonSequence:
         """
         self.set_elements(new_elements, append=True)
 
+    # Write tests for these
+    def clear(self):
+        self.set_elements([])
+
+    def __add__(self, other: 'AronsonSequence'):
+        if self.display_letter != other.get_letter() or self.direction != other.get_direction():
+            raise ValueError("Letter and direction must be the same")
+        new_seq = self.copy()
+        new_seq.append_elements(other.get_elements())
+        return new_seq
+
+    def __iadd__(self, other: 'AronsonSequence'):
+        if self.display_letter != other.get_letter() or self.direction != other.get_direction():
+            raise ValueError("Letter and direction must be the same")
+        self.append_elements(other.get_elements())
+        return self
+
     def set_letter(self, letter):
         """
         Sets the letter for the sequence and updates the sentence accordingly.
 
         :param letter: The new letter to set for the sequence.
         """
-        self._check_letter(letter)
+        self.check_letter(letter)
         self.letter = letter.lower()
         # need to update sentence
         self._update_sentence()
@@ -313,6 +331,17 @@ class AronsonSequence:
             raise ValueError("Element not in sequence")
         idx_range, _ = self.refer_dict[elem]
         return idx_range
+
+    def get_ref(self, elem):
+        """
+        given an element, if it is within the sequence, return the reference type
+        :param elem: to be checked
+        :return: reference type of element
+        """
+        if elem not in self.refer_dict.keys():
+            raise ValueError("Element not in sequence")
+        _, ref = self.refer_dict[elem]
+        return ref
 
     def get_letter(self):
         """
@@ -406,6 +435,9 @@ class AronsonSequence:
         :return: An iterator for the elements.
         """
         return iter(self.elements)
+
+    def __contains__(self, item):
+        return item in self.elements
 
     def __len__(self):
         """

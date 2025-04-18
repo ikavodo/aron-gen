@@ -35,6 +35,12 @@ class AronsonSequenceTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     AronsonSequence('t', invalid_elements, Direction.FORWARD)
 
+        invalid_directions_list = [True, 0]
+        for invalid_direction in invalid_directions_list:
+            with self.subTest(direction=invalid_direction):
+                with self.assertRaises(ValueError):
+                    AronsonSequence('t', [], invalid_direction)
+
     def test_construction_duplicate_elements(self):
         duplicate_elements_list = [
             ([1, 1, 2], [1, 2]),
@@ -160,6 +166,8 @@ class AronsonSequenceTests(unittest.TestCase):
             with self.subTest(seq=seq):
                 self.assertEqual(seq.is_empty(), expected)
 
+    # def test_get_occurrences(self):
+    #     # Too lazy right now. Tomorrow
     def test_is_correct(self):
         test_cases = [
             # all of these are correct sentences
@@ -186,11 +194,38 @@ class AronsonSequenceTests(unittest.TestCase):
 
             (AronsonSequence('t'), True),
             (AronsonSequence('t', [], Direction.BACKWARD), True),
+            (AronsonSequence('t', [3, 4, 39, 11], Direction.BACKWARD), True),
         ]
 
         for seq, expected in test_cases:
             with self.subTest(seq=seq):
                 self.assertEqual(seq.is_correct(), expected)
+
+    def test_clear(self):
+        empty = AronsonSequence('t')
+        emp_cpy = empty.copy()
+        emp_cpy.clear()
+        self.assertEqual(emp_cpy, empty)
+        seq = AronsonSequence('t', [25], Direction.FORWARD)
+        seq.clear()
+        self.assertEqual(seq, empty)
+
+    def test_add(self):
+        empty = AronsonSequence('t')
+        self.assertEqual(empty + empty, empty)
+
+        seq1 = AronsonSequence('t', [1], Direction.FORWARD)
+        seq2 = AronsonSequence('t', [4], Direction.FORWARD)
+        truth = AronsonSequence('t', [1, 4], Direction.FORWARD)
+        added = seq1 + seq2
+        self.assertEqual(added, truth)
+        self.assertNotEqual(added, seq1)
+        self.assertNotEqual(added, seq2)
+        seq_cpy = seq1.copy()
+        seq_cpy += empty
+        self.assertEqual(seq1, seq_cpy)
+        seq_cpy += seq2
+        self.assertEqual(seq_cpy, added)
 
     def test_complete(self):
         test_cases = [
@@ -314,13 +349,30 @@ class AronsonSequenceTests(unittest.TestCase):
         seq.flip_direction()
         self.assertEqual(seq.get_range(1), range(LEN_SUFFIX, len(seq.get_sentence()) - LEN_PREFIX))
 
+    def test_get_ref(self):
+        for direction in set(Direction):
+            seq = AronsonSequence('t', [], direction)
+            with self.assertRaises(ValueError):
+                seq.get_ref(1)
+            seq.append_elements([1])
+            self.assertEqual(seq.get_ref(1), Refer.BACKWARD)
+
     def test_cpy(self):
         seq = AronsonSequence('t', [1, 2], Direction.FORWARD)
         seq_cpy = seq.copy()
         self.assertEqual(seq, seq_cpy)
         seq.append_elements([3])
-        # elements are mutable-> copy should not be shallow
+        # elements are mutable
         self.assertNotEqual(seq, seq_cpy)
+
+    def test_contains(self):
+        elems = [1, 2]
+        seq = AronsonSequence('t', elems, Direction.FORWARD)
+        for e in elems:
+            self.assertIn(e, seq)
+        emp_seq = AronsonSequence('t')
+        for e in elems:
+            self.assertNotIn(e, emp_seq)
 
     def test_append_element_wrapper(self):
         seq = AronsonSequence('t', [1, 2], Direction.FORWARD)

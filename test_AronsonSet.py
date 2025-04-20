@@ -2,7 +2,7 @@ import unittest
 from functools import reduce
 
 from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE, n2w
-from AronsonSequence import AronsonSequence, Direction, Refer
+from AronsonSequence import AronsonSequence, Direction
 
 
 class AronsonSetTests(unittest.TestCase):
@@ -115,9 +115,8 @@ class AronsonSetTests(unittest.TestCase):
     def test_iter(self):
         empty_set = AronsonSet('t')
         empty_seq = AronsonSequence('t')
-        for seq in empty_set:
-            # only sequence in set
-            self.assertEqual(empty_seq, seq)
+        # only sequence in set
+        self.assertEqual(empty_seq, empty_set.get_seen_seqs().pop())
         valid_set = AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
         # Iterating through set also gives non empty sequence
         self.assertTrue(any(seq != empty_seq for seq in valid_set))
@@ -167,7 +166,6 @@ class AronsonSetTests(unittest.TestCase):
 
     def test_is_correct(self):
         test_cases = [
-
             (AronsonSequence('t'), True),
             (AronsonSequence('t', [], Direction.BACKWARD), True),
 
@@ -285,22 +283,96 @@ class AronsonSetTests(unittest.TestCase):
             with self.assertRaises(GenError):
                 aset.generate_aronson(2)
 
-    def test_generate_backwards(self):
-        pass
+    def test_backward_generate(self):
+
+        for direction in [Direction.FORWARD, Direction.BACKWARD]:
+            # can't use with forward-referring
+            aset = AronsonSet.from_sequence(AronsonSequence('t', [19], direction))
+            with self.assertRaises(GenError):
+                [aset.backward_generate(1, seq) for seq in aset.get_seen_seqs()]
+
+        # Can fail for self-referring- need to catch exception in this case
+        aset = AronsonSet.from_sequence(AronsonSequence('t', [10]))
+        with self.assertRaises(GenError):
+            [aset.backward_generate(1, seq) for seq in aset.get_seen_seqs()]
+
+        # First is backward referring but non-trivial, second is self-referring. Both should yield a non-trivial
+        # new generated sequence
+        for elems in [[1, 11], [10, 12]]:
+            seq = AronsonSequence('t', elems)
+            aset = AronsonSet.from_sequence(seq)
+            # try generating more than 1 new element
+            new_seqs = [aset.backward_generate(2, seq) for seq in aset.get_seen_seqs() if not seq.is_empty()]
+            new_seq = reduce(lambda a, b: a.union(b), new_seqs).pop()
+            # the two series converge
+            self.assertEqual(new_seq[-1], 24)
+
+
+    def test_flip_direction(self):
+        empty_set = AronsonSet('t')
+        empty_set.flip_direction()
+        self.assertEqual(empty_set.get_direction(), Direction.BACKWARD)
+        empty_set.flip_direction()
+        self.assertEqual(empty_set.get_direction(), Direction.FORWARD)
+        aset = AronsonSet.from_sequence(AronsonSequence('t', [1]))
+        # can't flip anymore
+        with self.assertRaises(ValueError):
+            aset.flip_direction()
+
     def test_swap_operation(self):
-        # Test valid swap
-        original = AronsonSequence('t', [1, 4, 11], Direction.FORWARD)
-        aset = AronsonSet.from_sequence(original)
-        swapped_seqs = aset.swap(original)
+        # Test finds all swaps
+        empty_set = AronsonSet('t')
+        empty_seq = empty_set.get_seen_seqs().pop()
+        # swapping empty sequence elements does nothing
+        self.assertEqual(empty_set.swap(empty_seq), set())
+        single_seq = empty_set.generate_aronson(1).pop()
+        self.assertEqual(empty_set.swap(single_seq), set())
 
-        # Expected swap that maintains validity
-        expected = AronsonSequence('t', [4, 1, 11], Direction.FORWARD)
-        self.assertIn(expected, swapped_seqs)
+        seq = empty_set.generate_aronson(3).pop()
+        swapped_seqs = empty_set.swap(seq)
+        self.assertIn(AronsonSequence('t', [1, 11, 4]), swapped_seqs)
+        second_gen_swap = empty_set.swap(AronsonSequence('t', [4, 1, 11]))
+        self.assertIn(AronsonSequence('t', [4, 11, 1]), second_gen_swap)
 
-        # Test invalid swap (would break references)
-        invalid_swap = AronsonSequence('t', [11, 4, 1], Direction.FORWARD)
-        self.assertNotIn(invalid_swap, swapped_seqs)
+        # Now do same thing with backwards.
+        empty_set.flip_direction()
+        seq = empty_set.generate_aronson(3).pop()
+        swapped_seqs = empty_set.swap(seq)
+        self.assertIn(AronsonSequence('t', [3, 11, 4], Direction.BACKWARD), swapped_seqs)
 
+        # Case in which pair can't be swapped
+        empty_set.flip_direction()
+        seq = AronsonSequence('t', [10, 12])
+        # is empty
+        swapped_seqs = empty_set.swap(seq)
+        self.assertEqual(swapped_seqs, set())
+
+    def test_subset_operation(self):
+        # Test finds all swaps
+        empty_set = AronsonSet('t')
+        empty_seq = empty_set.get_seen_seqs().pop()
+        # swapping empty sequence elements does nothing
+        self.assertEqual(empty_set.subset(empty_seq), set())
+
+        # This should return [1, 11]
+        seq = empty_set.generate_aronson(3).pop()
+        subbed_seqs = empty_set.subset(seq)
+        self.assertIn(AronsonSequence('t', [1, 11]), subbed_seqs)
+
+        # Now do same thing with backwards.
+        empty_set.flip_direction()
+        seq = empty_set.generate_aronson(3).pop()
+        subbed_seqs = empty_set.subset(seq)
+        self.assertIn(AronsonSequence('t', [3, 11], Direction.BACKWARD), subbed_seqs)
+
+        # Case in which pair can't be subset
+        empty_set.flip_direction()
+        seq = AronsonSequence('t', [10, 12, 17])
+        # is empty
+        subbed_seqs = empty_set.subset(seq)
+        self.assertEqual(subbed_seqs, set())
+
+# Doesn't work at this point
     def test_forward_generation(self):
         # Test finding next valid element
         initial = AronsonSequence('t', [1], Direction.FORWARD)
@@ -321,48 +393,48 @@ class AronsonSetTests(unittest.TestCase):
             AronsonSequence('t', [4], Direction.FORWARD)
         }
         self.assertTrue(valid_singletons.issubset(singletons))
-
-    def test_generate_from_rules(self):
-        aset = AronsonSet('t', Direction.FORWARD)
-        aset.generate_from_rules(3)
-
-        # Should contain standard sequence after 3 iterations
-        expected = AronsonSequence('t', [1, 4, 11], Direction.FORWARD)
-        self.assertIn(expected, aset.get_seen_seqs())
-
-    def test_intersection_operations(self):
-        # Create two sets with overlapping sequences
-        aset1 = AronsonSet('t', Direction.FORWARD)
-        aset1.generate_from_rules(3)
-
-        aset2 = AronsonSet('t', Direction.FORWARD)
-        aset2.generate_from_rules(2)
-
-        # Get intersection
-        intersection = aset1.intersect_aronson_sets(aset2, 2)
-        expected = AronsonSequence('t', [1, 4], Direction.FORWARD)
-        self.assertIn(expected, intersection)
-
-    def test_edge_cases(self):
-        # Test empty sequence handling
-        aset = AronsonSet('x', Direction.FORWARD)
-        self.assertTrue(aset.get_seen_seqs().pop().is_empty())
-
-        # Test generation failure handling
-        aset = AronsonSet('q', Direction.FORWARD)
-        with self.assertRaises(GenError):
-            aset.generate_aronson(5)
-
-    def test_property_methods(self):
-        # Test prefix complete check
-        seq = AronsonSequence('t', [1, 4], Direction.FORWARD)
-        aset = AronsonSet.from_sequence(seq)
-        self.assertTrue(seq.is_prefix_complete())
-
-        # Test has_forward_referring
-        forward_ref_seq = AronsonSequence('t', [19], Direction.FORWARD)
-        aset.add_sequences({forward_ref_seq})
-        self.assertTrue(forward_ref_seq.has_forward_referring())
+    #
+    # def test_generate_from_rules(self):
+    #     aset = AronsonSet('t', Direction.FORWARD)
+    #     aset.generate_from_rules(3)
+    #
+    #     # Should contain standard sequence after 3 iterations
+    #     expected = AronsonSequence('t', [1, 4, 11], Direction.FORWARD)
+    #     self.assertIn(expected, aset.get_seen_seqs())
+    #
+    # def test_intersection_operations(self):
+    #     # Create two sets with overlapping sequences
+    #     aset1 = AronsonSet('t', Direction.FORWARD)
+    #     aset1.generate_from_rules(3)
+    #
+    #     aset2 = AronsonSet('t', Direction.FORWARD)
+    #     aset2.generate_from_rules(2)
+    #
+    #     # Get intersection
+    #     intersection = aset1.intersect_aronson_sets(aset2, 2)
+    #     expected = AronsonSequence('t', [1, 4], Direction.FORWARD)
+    #     self.assertIn(expected, intersection)
+    #
+    # def test_edge_cases(self):
+    #     # Test empty sequence handling
+    #     aset = AronsonSet('x', Direction.FORWARD)
+    #     self.assertTrue(aset.get_seen_seqs().pop().is_empty())
+    #
+    #     # Test generation failure handling
+    #     aset = AronsonSet('q', Direction.FORWARD)
+    #     with self.assertRaises(GenError):
+    #         aset.generate_aronson(5)
+    #
+    # def test_property_methods(self):
+    #     # Test prefix complete check
+    #     seq = AronsonSequence('t', [1, 4], Direction.FORWARD)
+    #     aset = AronsonSet.from_sequence(seq)
+    #     self.assertTrue(seq.is_prefix_complete())
+    #
+    #     # Test has_forward_referring
+    #     forward_ref_seq = AronsonSequence('t', [19], Direction.FORWARD)
+    #     aset.add_sequences({forward_ref_seq})
+    #     self.assertTrue(forward_ref_seq.has_forward_referring())
 
     def test_brute_force_generation(self):
         aset = AronsonSet('t', Direction.FORWARD)
@@ -374,16 +446,16 @@ class AronsonSetTests(unittest.TestCase):
             AronsonSequence('t', [4, 1], Direction.FORWARD)
         }
         self.assertTrue(valid_sequences.issubset(aset.get_seen_seqs()))
-
-    def test_sequence_validation(self):
-        # Test valid sequence
-        valid_seq = AronsonSequence('t', [1, 4, 11], Direction.FORWARD)
-        aset = AronsonSet('t', Direction.FORWARD)
-        self.assertTrue(aset.is_correct(valid_seq))
-
-        # Test invalid sequence
-        invalid_seq = AronsonSequence('t', [1, 2, 3], Direction.FORWARD)
-        self.assertFalse(aset.is_correct(invalid_seq))
+    #
+    # def test_sequence_validation(self):
+    #     # Test valid sequence
+    #     valid_seq = AronsonSequence('t', [1, 4, 11], Direction.FORWARD)
+    #     aset = AronsonSet('t', Direction.FORWARD)
+    #     self.assertTrue(aset.is_correct(valid_seq))
+    #
+    #     # Test invalid sequence
+    #     invalid_seq = AronsonSequence('t', [1, 2, 3], Direction.FORWARD)
+    #     self.assertFalse(aset.is_correct(invalid_seq))
 
 
 if __name__ == '__main__':

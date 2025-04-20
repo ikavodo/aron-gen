@@ -3,5 +3,29 @@
 # "T is the letter in this sentence"... Can change it to "T is a letter in this sentence", special case
 # n=1 (singletons):
 # [1], [4], [10], [12], [19], [21], [22]
-# n=2:
+# n=2 (generating all forwards will be hard enough using rules...):
 # [1, 4], [1, 11], [1, 12], [1, 15], [1,17], [1
+
+# How is [1, 11] generated, except for using the subset rule? Seems we need to add that one too.
+# subset rule: [1, 4, 11] demand that nothing refer to range between [get_range(1),get_range(11)]
+
+
+# swap:
+# Direction.FORWARD
+# t is the first, eleventh, fourth
+# this can't be found via swap, because eleventh is in range of effect. Rather, it is found by twice calling the
+#
+# t is the fourth, first, eleventh
+# (t is the fourth, eleventh, first letter is also true!)
+
+# Direction.BACKWARD
+# t is the fourth, eleventh, third letter
+# t is the third, fourth, eleventh letter
+
+
+# forward_fix:
+# Direction.BACKWARD
+# t is the twenty-eighth, eighteenth letter
+
+# Direction.FORWARD
+# t is the twenty-eighth, seventeenth letter

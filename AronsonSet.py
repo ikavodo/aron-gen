@@ -142,8 +142,7 @@ class AronsonSet:
         self.iter_dict[self.cur_iter].update(seqs)
         self.seen_seqs.update(seqs)
 
-    # Don't use this in case there is anything forward-referring, as that element will need to be fixed! Use
-    # forward_fix() for that.
+    # Don't use this in case there is any forward-referring element in the sequence
     @staticmethod
     def backward_search(seq: AronsonSequence):
         """
@@ -153,7 +152,12 @@ class AronsonSet:
         """
         # does nothing if sequence is prefix complete!
         occurrences = seq.get_prefix_missing()
-        return {seq.copy().append_elements(occ) for occ in occurrences}
+        new_seqs = set()
+        for occ in occurrences:
+            seq_cpy = seq.copy()
+            seq_cpy.append_elements([occ])
+            new_seqs.add(seq_cpy)
+        return new_seqs
 
     def _agen(self, seq: AronsonSequence):
         """
@@ -162,9 +166,9 @@ class AronsonSet:
         :param seq: An optional AronsonSequence to generate from.
         :return: A generator yielding new indices for the sequence.
         """
-        idx = seq.get_prefix() if not seq.is_empty() else 0
+        idx = seq.get_prefix()
         s = seq.get_sentence()
-        s = s[idx:-LEN_SUFFIX] if self.direction == Direction.FORWARD else s[LEN_PREFIX:-idx][::-1]
+        s = s[idx:-LEN_SUFFIX] if self.direction == Direction.FORWARD else s[LEN_PREFIX: (-idx if idx else None)][::-1]
         while True:
             # generator yields as many indices as required
             idx_rel = 1 + s.find(self.letter)  # Find the relative position of the letter
@@ -176,7 +180,9 @@ class AronsonSet:
 
     # For good old well-behaved sequences (no forward referring)
     def backward_generate(self, n: int, seq: AronsonSequence = None):
-
+        """
+        Generate new sequences from well-behaved sequences (with backward/self-referring elements only)
+        """
         # generate empty AronsonSequence if no argument
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
         # generate as many new elements as necessary
@@ -187,8 +193,7 @@ class AronsonSet:
 
         if len(seq_cpy) < n:
             # could not extend sequence up to desired length
-            # raise GenError(seq_len=n)
-            return set()
+            raise GenError(seq_len=n)
         return {seq_cpy}
 
     # Wrapper for backward_generate() method with default arguments
@@ -267,7 +272,7 @@ class AronsonSet:
 
                 # Try fixing the forward-ref element. Notice that lower bound seq.get_range(elem)
                 # is before elem itself, which is forward referring
-                ord_key = len(str((seq.get_prefix()))) # Is this correct?
+                ord_key = len(str((seq.get_prefix())))  # Is this correct?
                 upper_bound = len(seq.get_sentence()) + ORD_TABLE[ord_key]
                 for candidate in range(min(seq.get_range(elem)), upper_bound):
                     # could this be made more efficient?
@@ -295,8 +300,6 @@ class AronsonSet:
             cur_seqs = set()
             for seq in prev_seqs:
 
-                # can do this either way
-                cur_seqs.update(self.swap(seq))
                 if self.is_complete(seq) or seq.has_forward_referring():
                     # most computationally intensive, takes most factors into account
                     cur_seqs.update(self.forward_fix(seq))
@@ -304,9 +307,12 @@ class AronsonSet:
                     if not seq.is_prefix_complete():
                         # there are missing occurrences to be added
                         cur_seqs.update(self.backward_search(seq))
+                    # Neither of these breaks correctness
                     cur_seqs.update(self.backward_generate(1, seq))
-                    # this can't 'break' anything
                     cur_seqs.update(self.forward_generate(seq))
+
+                # can always do this
+                cur_seqs.update(self.swap(seq))
             # takes care of updating where necessary
             self._update_iter(cur_seqs)
 
@@ -347,6 +353,13 @@ class AronsonSet:
         return new_set
 
     def set_iter_dict(self, new_dict):
+        # error checking!
+        field_set = {(s.get_letter(), s.get_direction()) for sets in new_dict.values() for s in sets}
+
+        # Verify all sequences share the same letter and direction
+        if len(field_set) > 1:
+            raise ValueError("All sequences must have the same letter and direction")
+
         # what is expected behavior when input argument iter_dict is empty?
         self.iter_dict.clear()
         self.iter_dict.update(new_dict)
@@ -387,27 +400,31 @@ class AronsonSet:
         Tracks the correct iteration index where each sequence was first seen in the inputs,
         and builds the new iter_dict accordingly.
         """
-        self.generate_from_all_rules(n)
-        other.generate_from_all_rules(n)
-        # implement version ignoring letters later.
         if self.letter != other.letter:
             raise ValueError("Mismatched letters: sets must use the same letter.")
 
-        # Compute the result of the set operation
-        result_seqs = set_op(self.get_seen_seqs(), other.get_seen_seqs())
+        # copy!
+        seq1 = self.copy()
+        seq2 = other.copy()
+        seq1.generate_from_all_rules(n)
+        seq2.generate_from_all_rules(n)
+        # implement version ignoring letters later.
 
-        # Build new iter_dict: for each sequence, track min of iter found in self or other
+        # Compute the result of the set operation
+        result_seqs = set_op(seq1.get_seen_seqs(), seq2.get_seen_seqs())
+
+        # Build new iter_dict: for each sequence, track min of iter found in seq1 or seq2
         new_iter_dict = defaultdict(set)
         search_dict = lambda cur_seq, cur_set: (i for i, s in cur_set.iter_dict.items() if cur_seq in s)
         for seq in result_seqs:
             # float('inf') is default val in case not found
-            iter1 = next(search_dict(seq, self), float('inf'))
-            iter2 = next(search_dict(seq, other), float('inf'))
+            iter1 = next(search_dict(seq, seq1), float('inf'))
+            iter2 = next(search_dict(seq, seq2), float('inf'))
             gen_iter = min(iter1, iter2)
             new_iter_dict[gen_iter].add(seq)
 
-        # Construct new AronsonSet
-        result = AronsonSet(self.get_letter(), self.get_direction())
+        # Construct new AronsonSet, set direction as that of first set
+        result = AronsonSet(seq1.get_letter(), seq1.get_direction())
         result._set_n_iterations(n)
         result.set_iter_dict(new_iter_dict)
         return result

@@ -1,4 +1,6 @@
 import unittest
+from functools import reduce
+
 from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE, n2w
 from AronsonSequence import AronsonSequence, Direction, Refer
 
@@ -207,24 +209,84 @@ class AronsonSetTests(unittest.TestCase):
         for case in invalid_cases:
             self.assertFalse(aset.is_complete(case))
 
-
-
     def test_set_iter_dict(self):
         aset = AronsonSet('t')
+        aset_cpy = aset.copy()
+        empty_set = {AronsonSequence('t')}
+        empty_dict = {0: empty_set}
+        aset_cpy.set_iter_dict(empty_dict)
+        self.assertEqual(aset, aset_cpy)
+        invalid_set = empty_set.copy()
+        invalid_set.update({AronsonSequence('t', [], Direction.BACKWARD), AronsonSequence('j')})
+        # Check non-valid case
+        invalid_dict = {0: invalid_set}
+        with self.assertRaises(ValueError):
+            aset_cpy.set_iter_dict(invalid_dict)
+        valid_set = empty_set.copy()
+        valid_seq = AronsonSequence('t', [1])
+        valid_set.add(valid_seq)
+        valid_dict = {0: valid_set}
+        aset_cpy.set_iter_dict(valid_dict)
+        self.assertEqual(aset_cpy, AronsonSet.from_sequence(valid_seq))
+
+    # Got to here
+    def test_backward_search(self):
+        aset_emp = AronsonSet('t')
+        empty_seq = aset_emp.get_seen_seqs().pop()
+        # Does nothing because seq.prefix()
+        self.assertEqual(aset_emp.backward_search(empty_seq), set())
+
+        for elems, direction in zip([[4, 1], [4, 3]], [Direction.FORWARD, Direction.BACKWARD]):
+            # missing occurences
+            aset = AronsonSet.from_sequence(AronsonSequence('t', [4], direction=direction))
+            new_seqs = [aset.backward_search(seq) for seq in aset.get_seen_seqs()]
+            reduced = reduce(lambda a, b: a.union(b), new_seqs)
+            targ_seq = AronsonSequence('t', elems, direction)
+            # Is valid
+            self.assertTrue(targ_seq.is_correct())
+            self.assertTrue(targ_seq.is_prefix_complete())
+            self.assertEqual(reduced, {targ_seq})
+
+        for direction in [Direction.FORWARD, Direction.BACKWARD]:
+            # forward referring
+            forward_ref = AronsonSequence('t', [19], direction)
+            aset = AronsonSet.from_sequence(forward_ref)
+            new_seqs = [aset.backward_search(seq) for seq in aset.get_seen_seqs()]
+            reduced = reduce(lambda a, b: a.union(b), new_seqs)
+            # Using backward_search on forward_referring sequence results in potentially false new sequences
+            # Need to check for correctness in that case.
+            self.assertFalse(all([seq.is_correct() for seq in reduced]))
+
+        # prefix complete
+        for elems, direction in zip([[1], [3]], [Direction.FORWARD, Direction.BACKWARD]):
+            new_aset = AronsonSet.from_sequence(AronsonSequence('t', elems, direction))
+            self.assertTrue(all(seq.is_prefix_complete()) for seq in new_aset.get_seen_seqs())
+            new_seqs = [new_aset.backward_search(seq) for seq in new_aset.get_seen_seqs()]
+            reduced = reduce(lambda a, b: a.union(b), new_seqs)
+            # Can't use backward_search on prefix complete sequences.
+            self.assertEqual(reduced, set())
 
     def test_generate_aronson(self):
-        # Test standard T sequence generation
-        aset = AronsonSet('t', Direction.FORWARD)
-        sequences = aset.generate_aronson(3)
-        expected = AronsonSequence('t', [1, 4, 11], Direction.FORWARD)
-        self.assertIn(expected, sequences)
+        # Simple case of generate_backwards()
+        for direction, elems in zip([Direction.FORWARD, Direction.BACKWARD],
+                                    [[1, 4, 11], [3, 4, 11]]):
+            aset = AronsonSet('t', direction)
+            for n in range(len(elems)):
+                # singleton
+                singleton_set = aset.generate_aronson(n)
+                expected = AronsonSequence('t', elems[:n], direction)
+                self.assertIn(expected, singleton_set)
+                seq = singleton_set.pop()
+                self.assertTrue(seq.is_prefix_complete())
 
-        # Test backward generation
-        aset_back = AronsonSet('t', Direction.BACKWARD)
-        sequences = aset_back.generate_aronson(2)
-        expected = AronsonSequence('t', [3, 4], Direction.BACKWARD)
-        self.assertIn(expected, sequences)
+        # Letter doesn't allow generating more.
+        for direction in set(Direction):
+            aset = AronsonSet('a', direction)
+            with self.assertRaises(GenError):
+                aset.generate_aronson(2)
 
+    def test_generate_backwards(self):
+        pass
     def test_swap_operation(self):
         # Test valid swap
         original = AronsonSequence('t', [1, 4, 11], Direction.FORWARD)

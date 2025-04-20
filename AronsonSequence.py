@@ -263,7 +263,7 @@ class AronsonSequence:
             filtered = [x for x in new_elements if
                         x not in seen and not seen.add(x) and x not in self.refer_dict.keys()]
             self.elements.extend(filtered)
-            self.prefix = max(self.elements) if self.elements else None
+            self.prefix = max(self.elements) if self.elements else 0
             self._update_sentence()
             # ignore repeating elements
             self._update_refer_dict(filtered)

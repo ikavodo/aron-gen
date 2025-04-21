@@ -204,6 +204,7 @@ class AronsonSet:
         """ Wrapper for backward_generate() method with default arguments"""
         return self.backward_generate(n)
 
+    #   currently unused
     def swap(self, seq: AronsonSequence = None):
         """
         are allowed to swap two elements if the position to which any element points is unaffected by the swap
@@ -223,7 +224,7 @@ class AronsonSet:
                 new_sets.add(AronsonSequence(self.letter, swapped, self.direction))
         return new_sets
 
-    # currently not used
+    # currently unused
     def subset(self, seq: AronsonSequence = None):
         """
         Can take subset if other elements aren't affected. This only works for backward-referring sequences.
@@ -273,16 +274,16 @@ class AronsonSet:
         :return: generated sequence
         """
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
+        sentence_len = len(seq.get_sentence())
         if seq.is_empty():
             # for generating all singleton AronsonSequences in first iteration
             lower_bound = 1
         else:
-            lower_bound = len(seq.get_sentence()[:-LEN_SUFFIX]) if seq.direction == Direction.FORWARD else \
-                len(seq.get_sentence()[LEN_PREFIX:])
-        sentence_len = len(seq.get_sentence())
+            lower_bound = sentence_len - (LEN_SUFFIX if seq.direction == Direction.FORWARD else LEN_PREFIX)
         ord_key = len(str(sentence_len))
-        upper_bound = len(seq.get_sentence()) + ORD_TABLE[ord_key]
+        upper_bound = sentence_len + ORD_TABLE[ord_key]
         new_seqs = set()
+        # TODO make more efficient
         for elem in range(lower_bound, upper_bound + 1):
             candidate = seq.copy()
             candidate.append_elements([elem])
@@ -325,38 +326,36 @@ class AronsonSet:
             cur_seqs = {s for s in seqs if self.is_correct(s)}
             self._update_iter(cur_seqs)
 
-    def forward_fix(self, seq: AronsonSequence, full=False) -> set[AronsonSequence]:
+    def forward_fix(self, seq: AronsonSequence) -> set[AronsonSequence]:
         """
         Generate by searching within a bounded search space for valid ordinals to append.
         Also "correct" existing sequence elements if necessary
         :param seq: to append to
-        :param full: more computationally intensive routine (for all order 2 sequences)
         :return: generated sequences
         """
         new_seqs = set()
         elements = seq.get_elements()
-        # all elements which refer forward and can be changed without breaking correctness
-        forward_refs = {x for x in elements if seq.get_ref(x) == Refer.FORWARD and all(
-            y not in range(min(seq.get_range(x)), len(seq.get_sentence())) for y in elements if y != x)}
         sentence_len = len(seq.get_sentence())
+
+        # all elements which refer forward and can be changed without breaking correctness
+        forward_inds = {i for i, x in enumerate(elements) if seq.get_ref(x) == Refer.FORWARD and all(
+            y not in range(min(seq.get_range(x)), sentence_len) for y in elements if y != x)}
         ord_key = len(str(sentence_len))
-        upper_bound = len(seq.get_sentence()) + ORD_TABLE[ord_key]
-        # currently inefficient in full case. Think how to optimize
-        occurrences = seq.get_occurrences() - forward_refs if not full else range(1, upper_bound)
-        for elem in forward_refs:
-            for candidate_back in occurrences:
-                lower_bound = min(seq.get_range(elem))
+        upper_bound = sentence_len + ORD_TABLE[ord_key]
+        for i in forward_inds:
+            for candidate_back in range(1, upper_bound):
+                lower_bound = min(seq.get_range(seq[i]))
                 for candidate_forward in range(lower_bound, upper_bound):
                     new_elements = seq.get_elements().copy()
                     new_elements.append(candidate_back)
-                    new_elements[new_elements.index(elem)] = candidate_forward
+                    new_elements[i] = candidate_forward
                     new_seq = AronsonSequence(seq.letter, new_elements, self.direction)
                     if self.is_correct(new_seq):
                         new_seqs.add(new_seq)
         return new_seqs
 
-    # Modify this to allow a choose of which rules to generate from in which circumstances.
-    def generate_from_rules(self, n_iterations: int, full=False):
+    # Works for 2, not for 3.
+    def generate_from_rules(self, n_iterations: int, full=True):
         """
         Generation procedure over all sequences within a given iteration
         :param n_iterations: to generate within
@@ -374,11 +373,15 @@ class AronsonSet:
             prev_seqs = self.iter_dict[self.cur_iter]
             self.cur_iter += 1
             cur_seqs = set()
+            forward_seqs = []
             for seq in prev_seqs:
 
                 if seq.has_forward_ref():
                     # most computationally intensive, takes most factors into account
-                    cur_seqs.update(self.forward_fix(seq, full))
+                    if full:
+                        cur_seqs.update(self.forward_fix(seq))
+                    else:
+                        forward_seqs.append(seq)
                 else:
                     if not seq.is_prefix_complete():
                         # there are missing occurrences to be added
@@ -388,8 +391,12 @@ class AronsonSet:
                         cur_seqs.update(self.backward_generate(1, seq))
                     cur_seqs.update(self.forward_generate(seq))
 
-                # do this anyway, check if it is actually efficient!
-                cur_seqs.update(self.swap(seq))
+            if forward_seqs and not full:
+                # Run forward fix only once
+                best = max(forward_seqs, key=lambda x: len(x.get_sentence()))
+                index = forward_seqs.index(best)
+                cur_seqs.update(self.forward_fix(forward_seqs[index]))
+
             filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
             self._update_iter(filtered)
 

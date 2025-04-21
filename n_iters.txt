@@ -1,0 +1,10 @@
+# Ground truth for number of sets per iteration:
+# Direction.FORWARD
+# n = 1: 8
+# n = 2: 73
+# n = 3: 955 (barely computable via brute force)
+
+# Direction.BACKWARD
+# n = 1: 7
+# n = 2: 67
+# n = 3: 771

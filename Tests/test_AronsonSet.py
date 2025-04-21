@@ -1,5 +1,6 @@
 import random
 import unittest
+import time
 from functools import reduce
 from itertools import combinations
 
@@ -455,6 +456,46 @@ class AronsonSetTests(unittest.TestCase):
         with self.assertRaises(GenError):
             aset = AronsonSet('r')
             aset.generate_fast(5)  # Should converge before 5 iterations
+
+
+    def test_generation_speed(self):
+        """Verify generate_fast() is faster than generate_from_rules() for equivalent iterations"""
+        iterations = 3
+        speedups = []
+
+        for direction in Direction:
+            # Time generate_from_rules
+            rules_set = AronsonSet('t', direction)
+            start_rules = time.perf_counter()
+            rules_set.generate_from_rules(iterations, full=False)
+            time_rules = time.perf_counter() - start_rules
+
+            # Time generate_fast
+            fast_set = AronsonSet('t', direction)
+            start_fast = time.perf_counter()
+            fast_set.generate_fast(iterations)
+            time_fast = time.perf_counter() - start_fast
+
+            # Calculate speedup factor
+            speedups.append(time_rules / max(time_fast, 1e-9))  # Avoid division by zero
+
+            # Verify fast method contains all key sequences from rules method
+            for s in fast_set:
+                # all correct
+                self.assertTrue(s in rules_set)
+
+        # Require minimum 2x speedup in at least one direction
+        self.assertTrue(max(speedups) >= 2.0,
+                        f"Insufficient speedup: {speedups}")
+
+    def _warmup(self):
+        """Prime the execution environment to reduce timing variance"""
+        temp_set = AronsonSet('t')
+        temp_set.generate_fast(1)
+        temp_set.generate_from_rules(1)
+
+    def setUp(self):
+        self._warmup()
 
     def test_sub(self):
         aset_empty = AronsonSet('t')

@@ -5,6 +5,7 @@ from typing import Callable
 from functools import reduce
 from contextlib import suppress
 
+# global: dictionary with maximum ordinal lengths per number of bits in decimal representation
 ORD_TABLE = {i + 1: j for i, j in enumerate([7, 14, 26, 39, 45, 56, 69, 75, 87, 99])}
 
 

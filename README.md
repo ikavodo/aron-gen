@@ -41,7 +41,7 @@ print(seq)  # "T is the first, fourth, eleventh letter in this sentence..."
 ### Installation
 ```bash
 git clone https://github.com/ikavodo/aronson-generator.git
-cd aronson-generator
+cd aronson
 pip install -r requirements.txt  # Requires num2words
 ```
 

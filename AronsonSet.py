@@ -44,7 +44,7 @@ class GenError(Exception):
         super().__init__(self.message)
 
     def __str__(self):
-        return f"{self.message}: could not generate {self.n} elements"
+        return f"{self.message}" if self.n is None else f"{self.message}: could not generate {self.n} elements"
 
 
 # This class generates correct Aronson sequences via various generation rules.
@@ -399,6 +399,8 @@ class AronsonSet:
                 cur_seqs.update(self.forward_fix(forward_seqs[index]))
 
             filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
+            if not filtered:
+                raise GenError("converged")
             self._update_iter(filtered)
 
     def filter_elems(self, elems):

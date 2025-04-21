@@ -59,4 +59,4 @@ Advanced Usage
 ```python
 # Hybrid generation strategies
 aset = AronsonSet('t', Direction.BACKWARD)
-aset.generate_from_rules(2, expensive=True)
+aset.generate_from_rules(2, full=True)

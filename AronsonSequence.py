@@ -52,7 +52,8 @@ class AronsonSequence:
     within a generated sentence of form:
     f"{letter} is the {ordinal(elements[0])}, {ordinal(elements[1])}... letter" if direction is Direction.FORWARD.
     Otherwise:
-    f"{letter} is the {ordinal(elements[-1])}, {ordinal(elements[-2])}... letter"
+    f"{letter} is the {ordinal(elements[-1])}, {ordinal(elements[-2])}... letter".
+    See https://ikavodo.github.io/aronson-1/ for more information
     """
 
     def __init__(self, letter: str, elements: Optional[list[int]] = None, direction: Direction = Direction.FORWARD):
@@ -71,13 +72,9 @@ class AronsonSequence:
         # Deduplicate while preserving order
         seen = set()
         self.elements = [x for x in elements if not (x in seen or seen.add(x))]
-        # set to 0 if not self.elements?
         self.prefix = max(self.elements) if self.elements else 0
 
-        # Set attributes, save in lower_case
         self.letter = letter.lower()
-        # get rid of duplicates, make sure order stays the same. Alternative: check for duplicates and raise ValueError
-
         self.direction = direction
         self.sentence_repr = self._build_sentence_repr()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
@@ -86,19 +83,17 @@ class AronsonSequence:
     @property
     def display_letter(self):
         """
-        upper letter for representation
-        :return:
+        uppercase letter for representation
+        :return: uppercase
         """
 
         return self.letter.upper()
 
-    # use these checks also in other class
     @staticmethod
     def check_direction(direction: Direction):
         """
         Make sure direction is a Direction Enum Type
-        :param direction:
-        :return:
+        :param direction: of sequence
         """
         # Validate direction
         if not isinstance(direction, Direction):
@@ -109,7 +104,6 @@ class AronsonSequence:
         """
         Make sure elements is a list with positive integers. Duplicates are allowed but filtered out
         :param elements: of sequence
-        :return:
         """
 
         if not isinstance(elements, list) or not all(isinstance(i, int) and i > 0 for i in elements):
@@ -120,7 +114,6 @@ class AronsonSequence:
         """
         check letter input is single alpha character
         :param letter:
-        :return:
         """
         if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
             raise ValueError(f"Invalid letter: {letter!r}. Must be a single alphabetic character.")
@@ -150,15 +143,12 @@ class AronsonSequence:
 
         :param elem: The index of the element in the sequence.
         :return: pos: position of ordinal representation within string
-                ref: where element points to within the string compared to the position 
+                ref: where element points to within the string compared to the position
         """
         target_elem = elem - 1
         rep = n2w(elem)
-        if self.direction == Direction.FORWARD:
-            pos = self.sentence.find(rep)
-        else:
-            # backward case, should position be where flipped word starts?
-            pos = self.sentence[::-1].find(rep[::-1])
+        pos = self.sentence.find(rep) if self.direction == Direction.FORWARD else pos = self.sentence[::-1].find(
+            rep[::-1])
         end = pos + len(rep)
         if target_elem < pos:
             ref = Refer.BACKWARD
@@ -183,7 +173,6 @@ class AronsonSequence:
 
         :param new_elements: A list of new elements to add to the dictionary.
         """
-        # no key duplicities- no overwrites
         self.refer_dict.update({
             x: self._get_refer_val(x) for x in new_elements
         })
@@ -207,7 +196,6 @@ class AronsonSequence:
             s = s[:idx]
         return {i + 1 for i, char in enumerate(s) if char == self.letter}
 
-    # Add notion of prefix_complete (up to SUFFIX)
     def is_complete(self):
         """
         Checks if the sequence is self-contained, i.e., the positions of the letter in the sentence match the elements.
@@ -233,6 +221,7 @@ class AronsonSequence:
         return self.get_occurrences(idx=self.prefix).difference(set(self.elements))
 
     def is_empty(self):
+        """ if is empty instance"""
         return not self.elements
 
     def is_correct(self):
@@ -251,21 +240,19 @@ class AronsonSequence:
         :param new_elements: The new elements for the sequence.
         :param append: Whether to append or replace elements.
         """
-        # check input
         new_elements = new_elements if new_elements is not None else []
         self.check_elements(new_elements)
         if append:
             if not new_elements:
-                # do nothing, works for None too, is falsy
+                # do nothing
                 return
-            # doesn't retain order! Make sure no duplicates.
             seen = set()
+            # ignore repeating elements
             filtered = [x for x in new_elements if
                         x not in seen and not seen.add(x) and x not in self.refer_dict.keys()]
             self.elements.extend(filtered)
             self.prefix = max(self.elements) if self.elements else 0
             self._update_sentence()
-            # ignore repeating elements
             self._update_refer_dict(filtered)
         else:
             # Replace elements
@@ -281,22 +268,9 @@ class AronsonSequence:
         """
         self.set_elements(new_elements, append=True)
 
-    # Write tests for these
     def clear(self):
+        """ wrapper for clearing the sequence of elements"""
         self.set_elements([])
-
-    def __add__(self, other: 'AronsonSequence'):
-        if self.display_letter != other.get_letter() or self.direction != other.get_direction():
-            raise ValueError("Letter and direction must be the same")
-        new_seq = self.copy()
-        new_seq.append_elements(other.get_elements())
-        return new_seq
-
-    def __iadd__(self, other: 'AronsonSequence'):
-        if self.display_letter != other.get_letter() or self.direction != other.get_direction():
-            raise ValueError("Letter and direction must be the same")
-        self.append_elements(other.get_elements())
-        return self
 
     def set_letter(self, letter):
         """
@@ -389,9 +363,33 @@ class AronsonSequence:
         """
         return self.prefix
 
+    # operator overloading
+    def __add__(self, other: 'AronsonSequence'):
+        """
+         + operator
+        :param other: sequence
+        :return: other.elements appended to self.elements
+        """
+        if self.display_letter != other.get_letter() or self.direction != other.get_direction():
+            raise ValueError("Letter and direction must be the same")
+        new_seq = self.copy()
+        new_seq.append_elements(other.get_elements())
+        return new_seq
+
+    def __iadd__(self, other: 'AronsonSequence'):
+        """
+         += operator
+        :param other: sequence
+        :return: self with other.elements appended
+        """
+        if self.display_letter != other.get_letter() or self.direction != other.get_direction():
+            raise ValueError("Letter and direction must be the same")
+        self.append_elements(other.get_elements())
+        return self
+
     def __repr__(self):
         """
-        Returns the human-readable representation of the Aronson sequence.
+        repr()/str() operator
 
         :return: The human-readable string representation of the sequence.
         """
@@ -405,7 +403,7 @@ class AronsonSequence:
 
     def __eq__(self, other):
         """
-        Compares two Aronson sequences for equality based on letter, elements, and direction.
+        = operator, Compares two Aronson sequences for equality based on letter, elements, and direction.
 
         :param other: The other AronsonSequence to compare with.
         :return: True if the sequences are equal, False otherwise.
@@ -414,6 +412,10 @@ class AronsonSequence:
             self.display_letter == other.get_letter() and self.direction == other.get_direction()
 
     def copy(self):
+        """
+        .copy() operator
+        :return: identical AronsonSequence instance
+        """
         return AronsonSequence(
             self.letter,
             self.elements.copy(),  # avoid sharing mutable state
@@ -422,7 +424,8 @@ class AronsonSequence:
 
     def __hash__(self):
         """
-        Returns a hash value for the AronsonSequence object based on its letter, elements, and direction.
+        hash() operator, returns a hash value for the AronsonSequence object based on its letter, elements,
+        and direction.
 
         :return: A hash value for the sequence.
         """
@@ -430,18 +433,19 @@ class AronsonSequence:
 
     def __iter__(self):
         """
-        Returns an iterator over the elements of the sequence.
+        for operator, returns an iterator over the elements of the sequence.
 
         :return: An iterator for the elements.
         """
         return iter(self.elements)
 
     def __contains__(self, item):
+        """ in operator, return True if element in sequence otherwise False"""
         return item in self.elements
 
     def __len__(self):
         """
-        Returns the length of the Aronson sequence (i.e., the number of elements).
+        len() operator, returns the length of the Aronson sequence (i.e., the number of elements).
 
         :return: The length of the Aronson sequence.
         """
@@ -449,7 +453,7 @@ class AronsonSequence:
 
     def __getitem__(self, index: int):
         """
-        Returns the element at a specified position in the Aronson sequence.
+        [] operator, returns the element at a specified position in the Aronson sequence.
 
         :param index: The index position to retrieve.
         :return: The element at the specified position.

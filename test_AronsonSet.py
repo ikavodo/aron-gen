@@ -7,6 +7,7 @@ from AronsonSequence import AronsonSequence, Direction
 
 
 class AronsonSetTests(unittest.TestCase):
+    """ unit test for AronsonSet"""
 
     def test_ord_dict(self):
         """
@@ -504,11 +505,11 @@ class AronsonSetTests(unittest.TestCase):
 
     def test_contains(self):
         aset = AronsonSet('t')
-        self.assertTrue(AronsonSequence('t') in aset[0])
+        self.assertTrue(AronsonSequence('t') in aset)
         aset.generate_from_rules(1)
         singleton_elems = [1, 4, 10, 12, 19, 21, 22]
         for elem in singleton_elems:
-            self.assertTrue(AronsonSequence('t', [elem]) in aset[1])
+            self.assertTrue(AronsonSequence('t', [elem]) in aset)
 
     def test_get_letter(self):
         aset = AronsonSet('t')

@@ -48,7 +48,7 @@ Clone repository:
 
 ```bash
 git clone https://github.com/ikavodo/aronson-generator.git
-cd aronson-generator
+cd aronson
 ```
 Install dependencies:
 

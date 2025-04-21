@@ -454,7 +454,7 @@ class AronsonSetTests(unittest.TestCase):
         # Test convergence detection
         with self.assertRaises(GenError):
             aset = AronsonSet('r')
-            aset.generate_fast(3)  # Should converge before 5 iterations
+            aset.generate_fast(5)  # Should converge before 5 iterations
 
     def test_sub(self):
         aset_empty = AronsonSet('t')

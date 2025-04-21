@@ -1,11 +1,11 @@
 import unittest
 from num2words import num2words
 from AronsonSequence import n2w, AronsonSequence, PREFIX, SUFFIX, Refer, Direction, REPR_FORWARD, \
-    REPR_BACKWARD, LEN_PREFIX, LEN_SUFFIX  # Adjust your_module as needed
+    REPR_BACKWARD, LEN_PREFIX, LEN_SUFFIX
 
 
-# unit test for AronsonSequence
 class AronsonSequenceTests(unittest.TestCase):
+    """ unit test for AronsonSet"""
 
     def test_construction(self):
         # test default values

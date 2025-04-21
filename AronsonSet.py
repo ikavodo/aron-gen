@@ -1,8 +1,9 @@
-from itertools import islice, combinations, permutations, chain
+from itertools import islice, combinations, permutations
 from AronsonSequence import AronsonSequence, n2w, Refer, Direction, LEN_PREFIX, LEN_SUFFIX
 from collections import defaultdict
 from typing import Callable
 from functools import reduce
+from contextlib import suppress
 
 # upper bound over max ordinal lengths per number of bits in integer representation
 # ORD_TABLE = {i: 12 * (i - 1) for i in range(1, 12)}
@@ -348,10 +349,13 @@ class AronsonSet:
         sentence_len = len(seq.get_sentence())
         ord_key = len(str(sentence_len))
         upper_bound = len(seq.get_sentence()) + ORD_TABLE[ord_key]
-        occurrences = seq.get_occurrences() - forward_refs if not expensive else range(1, seq.get_prefix())
+        # currently inefficient in expensive case. Think how to optimize
+        occurrences = seq.get_occurrences() - forward_refs if not expensive else range(1, upper_bound)
         for elem in forward_refs:
             for candidate_back in occurrences:
-                for candidate_forward in range(elem, upper_bound):
+                # made larger
+                lower_bound = min(seq.get_range(elem))
+                for candidate_forward in range(lower_bound, upper_bound):
                     new_elements = seq.get_elements().copy()
                     new_elements.append(candidate_back)
                     # Try replacing elem and checking if correct.
@@ -377,28 +381,23 @@ class AronsonSet:
             cur_seqs = set()
             for seq in prev_seqs:
 
-                if self.is_complete(seq) or seq.has_forward_referring():
+                if seq.has_forward_ref():
                     # most computationally intensive, takes most factors into account
                     cur_seqs.update(self.forward_fix(seq, expensive))
                 else:
                     if not seq.is_prefix_complete():
                         # there are missing occurrences to be added
                         cur_seqs.update(self.backward_search(seq))
-                    # Neither of these breaks correctness
-                    try:
+                    with suppress(GenError):
+                        # do nothing if error comes up
                         cur_seqs.update(self.backward_generate(1, seq))
-                    except GenError:
-                        # do nothing
-                        pass
                     cur_seqs.update(self.forward_generate(seq))
 
                 # can always do this
                 cur_seqs.update(self.swap(seq))
-                # doesn't add anything meaningful at this point
-                # cur_seqs.update(self.subset(seq))
-
+            filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
             # takes care of updating where necessary
-            self._update_iter(cur_seqs)
+            self._update_iter(filtered)
 
     def copy(self):
         new_set = AronsonSet(self.letter, self.direction)
@@ -408,9 +407,10 @@ class AronsonSet:
 
     def clear(self):
         """ wrapper"""
-        self.set_iter_dict({0: {AronsonSequence(self.letter, [], self.direction)}})
+        self.set_iter_dict({})
 
     def set_iter_dict(self, new_dict):
+        new_dict = {0: {AronsonSequence(self.letter, [], self.direction)}} if not new_dict else new_dict
         # error checking!
         field_set = {(s.get_letter(), s.get_direction()) for sets in new_dict.values() for s in sets}
 
@@ -479,6 +479,9 @@ class AronsonSet:
 
         # Build new iter_dict: for each sequence, track min of iter found in seq1 or seq2
         new_iter_dict = defaultdict(set)
+        if result:
+            # Always retain the empty set
+            new_iter_dict[0].add(AronsonSequence(set1.letter, [], set1.direction))
         search_dict = lambda cur_seq, cur_set: (i for i, s in cur_set.iter_dict.items() if cur_seq in s)
         for elem in result:
             # float('inf') is default val in case not found
@@ -488,7 +491,6 @@ class AronsonSet:
             gen_iter = min(iter1, iter2)
             # set direction be first set
             new_iter_dict[gen_iter].add(AronsonSequence(set1.letter, for_seq, set1.direction))
-
         # Construct new AronsonSet, set direction as that of first set
         result = AronsonSet(set1.get_letter(), set1.get_direction())
         result.set_iter_dict(new_iter_dict)

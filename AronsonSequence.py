@@ -188,7 +188,7 @@ class AronsonSequence:
             x: self._get_refer_val(x) for x in new_elements
         })
 
-    def has_forward_referring(self):
+    def has_forward_ref(self):
         """
         Checks if there are any forward referring elements in the sequence.
 

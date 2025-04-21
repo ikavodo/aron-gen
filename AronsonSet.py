@@ -325,12 +325,12 @@ class AronsonSet:
             cur_seqs = {s for s in seqs if self.is_correct(s)}
             self._update_iter(cur_seqs)
 
-    def forward_fix(self, seq: AronsonSequence, expensive=False) -> set[AronsonSequence]:
+    def forward_fix(self, seq: AronsonSequence, full=False) -> set[AronsonSequence]:
         """
         Generate by searching within a bounded search space for valid ordinals to append.
         Also "correct" existing sequence elements if necessary
         :param seq: to append to
-        :param expensive: more computationally intensive routine (for all order 2 sequences)
+        :param full: more computationally intensive routine (for all order 2 sequences)
         :return: generated sequences
         """
         new_seqs = set()
@@ -341,8 +341,8 @@ class AronsonSet:
         sentence_len = len(seq.get_sentence())
         ord_key = len(str(sentence_len))
         upper_bound = len(seq.get_sentence()) + ORD_TABLE[ord_key]
-        # currently inefficient in expensive case. Think how to optimize
-        occurrences = seq.get_occurrences() - forward_refs if not expensive else range(1, upper_bound)
+        # currently inefficient in full case. Think how to optimize
+        occurrences = seq.get_occurrences() - forward_refs if not full else range(1, upper_bound)
         for elem in forward_refs:
             for candidate_back in occurrences:
                 lower_bound = min(seq.get_range(elem))
@@ -356,11 +356,11 @@ class AronsonSet:
         return new_seqs
 
     # Modify this to allow a choose of which rules to generate from in which circumstances.
-    def generate_from_rules(self, n_iterations: int, expensive=False):
+    def generate_from_rules(self, n_iterations: int, full=False):
         """
         Generation procedure over all sequences within a given iteration
         :param n_iterations: to generate within
-        :param expensive: computationally expensive routine for finding all sequences of given order
+        :param full: computationally full routine for finding all sequences of given order
         :return: None
         """
         if n_iterations < 0:
@@ -378,7 +378,7 @@ class AronsonSet:
 
                 if seq.has_forward_ref():
                     # most computationally intensive, takes most factors into account
-                    cur_seqs.update(self.forward_fix(seq, expensive))
+                    cur_seqs.update(self.forward_fix(seq, full))
                 else:
                     if not seq.is_prefix_complete():
                         # there are missing occurrences to be added
@@ -431,7 +431,7 @@ class AronsonSet:
             seq.flip_direction()
 
     def _set_operation_core(self: 'AronsonSet', other: 'AronsonSet', set_op: Callable[[set, set], set],
-                            n: int = 0, expensive=False) -> 'AronsonSet':
+                            n: int = 0, full=False) -> 'AronsonSet':
         """
         Core logic for set operations on AronsonSets.
         Produces a new AronsonSet that is the result of applying `set_op` (e.g., union, intersection)
@@ -440,7 +440,7 @@ class AronsonSet:
         :param other: set
         :param set_op: to apply
         :param n: generation iterations
-        :param expensive: to use for generation
+        :param full: to use for generation
         :return: new instance with set_op applied
         """
         if self.letter != other.letter:
@@ -449,8 +449,8 @@ class AronsonSet:
         # don't modify inputs
         set1 = self.copy()
         set2 = other.copy()
-        set1.generate_from_rules(n, expensive)
-        set2.generate_from_rules(n, expensive)
+        set1.generate_from_rules(n, full)
+        set2.generate_from_rules(n, full)
         # Compute the result of the set operation
         result = set_op({tuple(seq.get_elements()) for seq in set1.get_seen_seqs()},
                         {tuple(seq.get_elements()) for seq in set2.get_seen_seqs()})
@@ -494,72 +494,72 @@ class AronsonSet:
         return self.direction
 
     # operator overloading
-    def __and__(self, other: 'AronsonSet', n: int = 0, expensive=False):
+    def __and__(self, other: 'AronsonSet', n: int = 0, full=False):
         """
         & operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-        :param expensive: for generating
+        :param full: for generating
         :return: set instance
         """
-        return self._set_operation_core(other, set.intersection, n, expensive)
+        return self._set_operation_core(other, set.intersection, n, full)
 
-    def __iand__(self, other, n: int = 0, expensive=False):
+    def __iand__(self, other, n: int = 0, full=False):
         """
         &= operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-        :param expensive: for generating
+        :param full: for generating
         :return: set instance
         """
-        result = self._set_operation_core(other, set.intersection, n, expensive)
+        result = self._set_operation_core(other, set.intersection, n, full)
         self.cur_iter = n
         self.set_iter_dict(result.get_iter_dict())
         return self
 
-    def __or__(self, other: 'AronsonSet', n: int = 0, expensive=False):
+    def __or__(self, other: 'AronsonSet', n: int = 0, full=False):
         """
         | operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-        :param expensive: for generating
+        :param full: for generating
         :return: set instance
         """
-        return self._set_operation_core(other, set.union, n, expensive)
+        return self._set_operation_core(other, set.union, n, full)
 
-    def __ior__(self, other: 'AronsonSet', n: int = 0, expensive=False):
+    def __ior__(self, other: 'AronsonSet', n: int = 0, full=False):
         """
         |= operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-        :param expensive: for generating
+        :param full: for generating
         :return: set instance
         """
-        result = self._set_operation_core(other, set.union, n, expensive)
+        result = self._set_operation_core(other, set.union, n, full)
         self.cur_iter = n
         self.set_iter_dict(result.get_iter_dict())
         return self
 
-    def __sub__(self, other: 'AronsonSet', n: int = 0, expensive=False):
+    def __sub__(self, other: 'AronsonSet', n: int = 0, full=False):
         """
         - operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-        :param expensive: for generating
+        :param full: for generating
         :return: set instance
         """
 
-        return self._set_operation_core(other, set.difference, n, expensive)
+        return self._set_operation_core(other, set.difference, n, full)
 
-    def __isub__(self, other: 'AronsonSet', n: int = 0, expensive=False):
+    def __isub__(self, other: 'AronsonSet', n: int = 0, full=False):
         """
         -= operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-        :param expensive: for generating
+        :param full: for generating
         :return: set instance
         """
-        result = self._set_operation_core(other, set.difference, n, expensive)
+        result = self._set_operation_core(other, set.difference, n, full)
         self.cur_iter = n
         self.set_iter_dict(result.get_iter_dict())
         return self

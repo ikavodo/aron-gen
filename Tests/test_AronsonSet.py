@@ -417,7 +417,7 @@ class AronsonSetTests(unittest.TestCase):
         aset_brute = AronsonSet('t')
         aset_brute.generate_brute_force(2)
         aset_rules = AronsonSet('t')
-        aset_rules.generate_from_rules(2, expensive=True)
+        aset_rules.generate_from_rules(2, full=True)
         missing = aset_brute - aset_rules
         # Works
         self.assertEqual(missing, AronsonSet('t'))
@@ -432,7 +432,7 @@ class AronsonSetTests(unittest.TestCase):
     #     for direction, n_seqs in zip(list(Direction), seqs_per_iter):
     #         for i, n in enumerate(n_seqs):
     #             aset = AronsonSet('t', direction)
-    #             aset.generate_from_rules(i, expensive=True)
+    #             aset.generate_from_rules(i, full=True)
     #             self.assertTrue(all(aset.is_correct(s) for s in aset.get_seen_seqs()))
     #             # doesn't work for 3!
     #             self.assertEqual(len(aset), n)

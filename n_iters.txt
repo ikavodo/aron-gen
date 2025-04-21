@@ -2,18 +2,10 @@
 # Direction.FORWARD
 # n = 1: 8
 # n = 2: 73
-# n = 3: 955 (barely computable via brute force)
+# n = 3: 955
 
 # Direction.BACKWARD
 # n = 1: 7
 # n = 2: 67
 # n = 3: 771
-
-# sequences not found by forward_fix() when range is too small
-#  T is the twentieth, first letter in this sentence, not counting commas and spaces
-#  T is the twenty-fifth, first letter in this sentence, not counting commas and spaces
-#  T is the twenty-seventh, first letter in this sentence, not counting commas and spaces
-#  T is the twenty-sixth, first letter in this sentence, not counting commas and spaces
-#  T is the twentieth, fourth letter in this sentence, not counting commas and spaces
-#  T is the twenty-eighth, fourth letter in this sentence, not counting commas and spaces
-#  T is the twenty-sixth, fourth letter in this sentence, not counting commas and spaces
+# third iteration is barely computable via brute force, whereas generate_from_rules() finds half of all sets

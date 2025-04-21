@@ -442,7 +442,7 @@ class AronsonSetTests(unittest.TestCase):
         aset.generate_from_rules(1)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
-        intersect = (aset.__and__(aset_back, 1)).get_seen_seqs()
+        intersect = (aset.__and__(aset_back, 4, full=True)).get_seen_seqs()
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
             self.assertIn(seq, intersect)
 

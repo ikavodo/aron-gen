@@ -69,6 +69,7 @@ class AronsonSet:
         self.cur_iter = 0  # no generating iterations yet
         self.seen_seqs = {AronsonSequence(self.letter, [], self.direction)}  # every set contains empty sequence
         self.iter_dict[self.cur_iter] = self.seen_seqs.copy()
+        self.subset_dict = {}
 
     @property
     def display_letter(self):
@@ -225,7 +226,24 @@ class AronsonSet:
                 new_sets.add(AronsonSequence(self.letter, swapped, self.direction))
         return new_sets
 
-    # currently unused
+    def _subset_to_index_pairs(self, seq_length):
+        """ Map each index pair (i, j) to all non-empty subsets of indices strictly in between.
+            If i and j are adjacent, also include each individually as possible subsets.
+        """
+        index_pair_subsets = defaultdict(list)
+        for i in range(seq_length):
+            for j in range(i + 1, seq_length):
+                mid = list(range(i + 1, j))  # indices strictly in between
+                if not mid:
+                    # i and j are adjacent → allow deleting i or j individually
+                    index_pair_subsets[(i, j)].append((i,))
+                    index_pair_subsets[(i, j)].append((j,))
+                else:
+                    for r in range(1, len(mid) + 1):
+                        for sub in combinations(mid, r):
+                            index_pair_subsets[(i, j)].append(sub)
+        return index_pair_subsets
+
     def subset(self, seq: AronsonSequence = None):
         """
         Can take subset if other elements aren't affected. This only works for backward-referring sequences.
@@ -233,30 +251,11 @@ class AronsonSet:
         :return: set of newly generated sets in which swapping is legal
         """
 
-        def subset_to_index_pairs(seq_length):
-            """ Map each index pair (i, j) to all non-empty subsets of indices strictly in between.
-                If i and j are adjacent, also include each individually as possible subsets.
-            """
-            index_pair_subsets = defaultdict(list)
-            for i in range(seq_length):
-                for j in range(i + 1, seq_length):
-                    mid = list(range(i + 1, j))  # indices strictly in between
-                    if not mid:
-                        # i and j are adjacent → allow deleting i or j individually
-                        index_pair_subsets[(i, j)].append((i,))
-                        index_pair_subsets[(i, j)].append((j,))
-                    else:
-                        for r in range(1, len(mid) + 1):
-                            for sub in combinations(mid, r):
-                                index_pair_subsets[(i, j)].append(sub)
-            return index_pair_subsets
-
         new_sets = set()
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
-        subset_dict = subset_to_index_pairs(len(seq))
         # Idea is to pick arbitrary pairs and delete every subset in between
         for i, j in combinations(range(len(seq)), 2):
-            for sub in subset_dict[(i, j)]:
+            for sub in self.subset_dict[(i, j)]:
                 ranges = [seq.get_range(seq[x]) for x in sub]
                 # anything after first omitted is affected
                 range_min = min(r.start for r in ranges)
@@ -284,7 +283,7 @@ class AronsonSet:
         ord_key = len(str(sentence_len))
         upper_bound = sentence_len + ORD_TABLE[ord_key]
         new_seqs = set()
-        # TODO make more efficient
+        # make more efficient?
         for elem in range(lower_bound, upper_bound + 1):
             candidate = seq.copy()
             candidate.append_elements([elem])
@@ -391,8 +390,11 @@ class AronsonSet:
             return
 
         while self.cur_iter < n_iterations:
+
             prev_seqs = self.iter_dict[self.cur_iter]
             self.cur_iter += 1
+            # update subset_dict
+            self.subset_dict = self._subset_to_index_pairs(self.cur_iter)
             # generate_singletons might be unnecessary
             cur_seqs = self.generate_singletons() if self.cur_iter == 1 else set().union(
                 *(self.swap(seq) | self.subset(seq) for seq in prev_seqs))
@@ -673,4 +675,3 @@ class AronsonSet:
             self.direction,
             self._hashable_iter_dict
         ))
-

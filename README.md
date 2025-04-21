@@ -18,7 +18,7 @@ Models self-referential sentences with:
 ```python
 # Create and validate sequence
 seq = AronsonSequence('t', [1,4,11], Direction.FORWARD)
-print(seq.is_correct())  # True/False
+print(seq.is_correct())  # True
 print(seq)  # "T is the first, fourth, eleventh letter in this sentence..."
 ```
 
@@ -32,8 +32,9 @@ Manages collections of valid sequences with:
 ```python
 # Generate and analyze sequences
 aset = AronsonSet('t')
-aset.generate_fast(3)  # Optimized generation
-missing = brute_set - rule_set  # Set operations
+seq = aset.generate_aronson(3) # generates AronsonSequence('t', [1,4,11], Direction.FORWARD)
+print(aset.is_correct(seq) #True
+print(seq)  # "T is the first, fourth, eleventh letter in this sentence..."
 ```
 
 ### Installation
@@ -54,6 +55,8 @@ aset.generate_fast(3)  # Optimized continuation
 ### Set Operations
 ```python
 # Combine sequence sets
+set1 = AronsonSet('t', Direction.BACKWARD)
+set2 = AronsonSet('t', Direction.FORWARD)
 union_set = set1 | set2
 intersection_set = set1 & set2
 difference_set = set1 - set2
@@ -63,17 +66,12 @@ difference_set = set1 - set2
 Comprehensive test suite covering:
 
 - Sequence validation and reference resolution
-
 - Generation method comparisons
-
 - Set operation correctness
-
 - Edge case handling
-
 - Performance benchmarks
 
 Run tests with:
-
 ```bash
 python -m unittest test_AronsonSet.py test_AronsonSequence.py
 ```

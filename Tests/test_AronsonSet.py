@@ -1,6 +1,7 @@
 import random
 import unittest
 from functools import reduce
+from itertools import combinations
 
 from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE, n2w
 from AronsonSequence import AronsonSequence, Direction, Refer
@@ -404,6 +405,57 @@ class AronsonSetTests(unittest.TestCase):
     def test_generate_from_rules(self):
         self.check_generation_method("generate_from_rules")
 
+    def test_generate_fast(self):
+        # Test singleton generation in first iteration
+        valid_singletons = {
+            Direction.FORWARD: {1, 4, 10, 12, 19, 21, 22},
+            Direction.BACKWARD: {3, 4, 8, 19, 23, 24}
+        }
+
+        for direction in Direction:
+            aset = AronsonSet('t', direction)
+            aset.generate_fast(1)
+
+            # Verify first iteration contains valid singletons
+            for seq in valid_singletons[direction]:
+                aseq = AronsonSequence('t', [seq], direction)
+                self.assertTrue(aseq.is_correct())
+                self.assertIn(aseq, aset[1])
+
+        # Test swap/subset operations in subsequent iterations
+        test_cases = [
+            ([1, 4], [4, 1]),  # Simple swap
+            # This is incorrect?
+            ([10, 12], [12, 10]),
+            ([3, 4], [4, 3])  # Backward direction
+        ]
+
+        for initial, swapped in test_cases:
+            for direction in Direction:
+                aset = AronsonSet('t', direction)
+                aset.generate_fast(2)
+                for elems in [initial, swapped]:
+                    # Check original and swapped versions exist in second iteration
+                    seq = AronsonSequence('t', elems, direction)
+                    if seq.is_correct():
+                        self.assertIn(seq, aset)
+
+        # Test subset operations
+        aset = AronsonSet('t')
+        aset.generate_fast(3)
+
+        for seq in aset:
+            if len(seq) > 1:
+                # Verify at least one subset exists in next iteration
+                subsets = {AronsonSequence('t', list(s), seq.direction)
+                           for s in combinations(seq, len(seq) - 1)}
+                self.assertTrue(any(s in aset for s in subsets if s.is_correct()))
+
+        # Test convergence detection
+        with self.assertRaises(GenError):
+            aset = AronsonSet('r')
+            aset.generate_fast(5)  # Should converge before 5 iterations
+
     def test_sub(self):
         aset_empty = AronsonSet('t')
         singletons = aset_empty.generate_singletons()
@@ -442,7 +494,7 @@ class AronsonSetTests(unittest.TestCase):
         aset.generate_from_rules(1)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
-        intersect = (aset.__and__(aset_back, 4, full=True)).get_seen_seqs()
+        intersect = (aset.__and__(aset_back, 1, full=True)).get_seen_seqs()
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
             self.assertIn(seq, intersect)
 

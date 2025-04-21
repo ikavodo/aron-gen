@@ -355,53 +355,70 @@ class AronsonSet:
                         new_seqs.add(new_seq)
         return new_seqs
 
-    # Works for 2, not for 3.
     def generate_from_rules(self, n_iterations: int, full=True):
         """
-        Generation procedure over all sequences within a given iteration
-        :param n_iterations: to generate within
-        :param full: computationally full routine for finding all sequences of given order
-        :return: None
+        Generate sequences using forward/backward resolution rules
+        :param n_iterations: Number of generations to perform
+        :param full: Whether to use exhaustive forward reference resolution
         """
         if n_iterations < 0:
             raise ValueError("Num of iterations must be non-negative")
-
         if n_iterations == 0:
-            # do nothing
             return
 
         while self.cur_iter < n_iterations:
             prev_seqs = self.iter_dict[self.cur_iter]
             self.cur_iter += 1
-            cur_seqs = set()
-            forward_seqs = []
-            for seq in prev_seqs:
+            cur_seqs, forward_seqs = set(), []
 
+            for seq in prev_seqs:
                 if seq.has_forward_ref():
-                    # most computationally intensive, takes most factors into account
-                    if full:
-                        cur_seqs.update(self.forward_fix(seq))
-                    else:
-                        forward_seqs.append(seq)
+                    (cur_seqs.update(self.forward_fix(seq)) if full else forward_seqs.append(seq))
                 else:
-                    if not seq.is_prefix_complete():
-                        # there are missing occurrences to be added
-                        cur_seqs.update(self.backward_search(seq))
-                    with suppress(GenError):
-                        # do nothing if error comes up
-                        cur_seqs.update(self.backward_generate(1, seq))
-                    cur_seqs.update(self.forward_generate(seq))
+                    cur_seqs.update(self._handle_backward_rules(seq))
 
             if forward_seqs and not full:
-                # Run forward fix only once
-                best = max(forward_seqs, key=lambda x: len(x.get_sentence()))
-                index = forward_seqs.index(best)
-                cur_seqs.update(self.forward_fix(forward_seqs[index]))
+                cur_seqs.update(self.forward_fix(max(forward_seqs,
+                                                     key=lambda x: len(x.get_sentence()))))
 
-            filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
-            if not filtered:
-                raise GenError("converged")
-            self._update_iter(filtered)
+            self._update_filtered(cur_seqs)
+
+    def generate_fast(self, n_iterations: int):
+        """Optimized generation using swap/subset operations"""
+        if n_iterations < 0:
+            raise ValueError("Num of iterations must be non-negative")
+        if n_iterations == 0:
+            return
+
+        while self.cur_iter < n_iterations:
+            prev_seqs = self.iter_dict[self.cur_iter]
+            self.cur_iter += 1
+            # generate_singletons might be unnecessary
+            cur_seqs = self.generate_singletons() if self.cur_iter == 1 else set().union(
+                *(self.swap(seq) | self.subset(seq) for seq in prev_seqs))
+            for seq in (s for s in prev_seqs if not s.has_forward_ref()):
+                cur_seqs.update(self._handle_backward_rules(seq))
+
+            self._update_filtered(cur_seqs)
+
+            # Helper methods
+
+    def _handle_backward_rules(self, seq):
+        """Handle backward-looking generation rules"""
+        results = set()
+        if not seq.is_prefix_complete():
+            results.update(self.backward_search(seq))
+        with suppress(GenError):
+            results.update(self.backward_generate(1, seq))
+        results.update(self.forward_generate(seq))
+        return results
+
+    def _update_filtered(self, cur_seqs):
+        """Update seen sequences with filtered results"""
+        filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
+        if not filtered:
+            raise GenError("converged")
+        self._update_iter(filtered)
 
     def filter_elems(self, elems):
         """
@@ -478,6 +495,7 @@ class AronsonSet:
         :param full: to use for generation
         :return: new instance with set_op applied
         """
+
         def search_dict(cur_seq, cur_set):
             """ helper for getting iterations in which a sequence is added to iter_dict"""
             return (i for i, s in cur_set.iter_dict.items() if cur_seq in s)

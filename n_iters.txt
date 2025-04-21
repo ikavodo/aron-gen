@@ -9,3 +9,5 @@
 # n = 2: 67
 # n = 3: 771
 # third iteration is barely computable via brute force, whereas generate_from_rules() finds half of all sets
+
+# t is the twelfth

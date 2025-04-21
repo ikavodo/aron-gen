@@ -457,7 +457,6 @@ class AronsonSetTests(unittest.TestCase):
             aset = AronsonSet('r')
             aset.generate_fast(5)  # Should converge before 5 iterations
 
-
     def test_generation_speed(self):
         """Verify generate_fast() is faster than generate_from_rules() for equivalent iterations"""
         iterations = 3
@@ -487,15 +486,6 @@ class AronsonSetTests(unittest.TestCase):
         # Require minimum 2x speedup in at least one direction
         self.assertTrue(max(speedups) >= 2.0,
                         f"Insufficient speedup: {speedups}")
-
-    def _warmup(self):
-        """Prime the execution environment to reduce timing variance"""
-        temp_set = AronsonSet('t')
-        temp_set.generate_fast(1)
-        temp_set.generate_from_rules(1)
-
-    def setUp(self):
-        self._warmup()
 
     def test_sub(self):
         aset_empty = AronsonSet('t')

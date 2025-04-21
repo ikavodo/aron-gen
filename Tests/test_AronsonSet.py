@@ -317,22 +317,25 @@ class AronsonSetTests(unittest.TestCase):
         swapped_seqs = empty_set.swap(seq)
         self.assertEqual(swapped_seqs, set())
 
+    # Throws error because of change to dictionary
     def test_subset_operation(self):
-        # Test finds all swaps
+        # Test finds all subsets
         empty_set = AronsonSet('t')
         empty_seq = empty_set.get_seen_seqs().pop()
-        # swapping empty sequence elements does nothing
+        # taking subset of empty sequence elements does nothing
         self.assertEqual(empty_set.subset(empty_seq), set())
 
         for direction in list(Direction):
             empty_set = AronsonSet('t', direction)
             seq = empty_set.generate_aronson(3).pop()
+            # prepare for
             subbed_seqs = empty_set.subset(seq)
             self.assertIn(AronsonSequence('t', seq[::2], direction), subbed_seqs)
 
         elems = [1, 4]
         seq = AronsonSequence('t', elems)
-        subbed_seqs = AronsonSet('t').subset(seq)
+        aset = AronsonSet('t')
+        subbed_seqs = aset.subset(seq)
         for e in elems:
             self.assertIn(AronsonSequence('t', [e]), subbed_seqs)
 
@@ -631,11 +634,23 @@ class AronsonSetTests(unittest.TestCase):
             self.assertEqual(hash(aset) == hash(other), aset == other)
 
     def test_is_hashable(self):
-        aset = AronsonSequence('t')
+        aset = AronsonSet('t')
         s = set()
         # set is hashable
         s.add(aset)
         self.assertIn(aset, s)
+
+    def test_continue_generation(self):
+        aset = AronsonSet('t')
+        aset.generate_fast(2)
+        aset2 = AronsonSet('t')
+        aset2.generate_from_rules(2, full=True)
+        self.assertNotEqual(aset, aset2)
+        # now flip use of generators for next iteration
+        aset.generate_from_rules(3, full=False)
+        aset2.generate_fast(3)
+        # not the same sets
+        self.assertNotEqual(aset, aset2)
 
 
 if __name__ == '__main__':

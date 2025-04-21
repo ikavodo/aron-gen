@@ -69,7 +69,7 @@ class AronsonSet:
         self.cur_iter = 0  # no generating iterations yet
         self.seen_seqs = {AronsonSequence(self.letter, [], self.direction)}  # every set contains empty sequence
         self.iter_dict[self.cur_iter] = self.seen_seqs.copy()
-        self.subset_dict = {}
+        self.subset_dict = defaultdict(set)
 
     @property
     def display_letter(self):
@@ -253,6 +253,8 @@ class AronsonSet:
 
         new_sets = set()
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
+        if len(seq) > self.cur_iter:
+            self.subset_dict = self._subset_to_index_pairs(len(seq))
         # Idea is to pick arbitrary pairs and delete every subset in between
         for i, j in combinations(range(len(seq)), 2):
             for sub in self.subset_dict[(i, j)]:
@@ -395,7 +397,6 @@ class AronsonSet:
             self.cur_iter += 1
             # update subset_dict
             self.subset_dict = self._subset_to_index_pairs(self.cur_iter)
-            # generate_singletons might be unnecessary
             cur_seqs = self.generate_singletons() if self.cur_iter == 1 else set().union(
                 *(self.swap(seq) | self.subset(seq) for seq in prev_seqs))
             for seq in (s for s in prev_seqs if not s.has_forward_ref()):
@@ -458,6 +459,10 @@ class AronsonSet:
         self.set_iter_dict({})
 
     # Setters
+    def set_subset_dict(self, seq: AronsonSequence):
+        """ Helper"""
+        self.subset_dict = self._subset_to_index_pairs(len(seq))
+
     def set_iter_dict(self, new_dict):
         # Set always includes empty AronsonSequence
         new_dict = {0: {AronsonSequence(self.letter, [], self.direction)}} if not new_dict else new_dict

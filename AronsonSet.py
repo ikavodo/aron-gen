@@ -35,7 +35,7 @@ class GenError(Exception):
         Custom exception raised when generating from the input sequence is impossible.
 
         :param message: The error message to be shown.
-        :param seq_len: expected length of sequence
+        :param n: expected length of sequence
         """
 
     def __init__(self, message="Generating failed", n=None):
@@ -96,8 +96,8 @@ class AronsonSet:
     def from_set(cls, seqs: set[AronsonSequence] = None):
         """
         constructor from set of AronsonSequence instances.
-        :param seqs: set of AronsonSequence instances
-        :return: instance of class
+        :param seqs: set of instances
+        :return: class instance
         """
         seqs = {AronsonSequence('t')} if (seqs is None or not seqs) else seqs
         field_set = set()
@@ -184,7 +184,7 @@ class AronsonSet:
         """
         Generate new sequences from well-behaved sequences (with backward/self-referring elements only)
         :param n: num of elements to generate
-        :param seq: to generate from, optional
+        :param seq: for generation, optional
         :return: generated sequence with n new elements
         """
         # generate empty AronsonSequence if no argument
@@ -234,27 +234,27 @@ class AronsonSet:
         """
 
         def subset_to_index_pairs(seq_length):
-            """ Map each index pair (i, j) to all non-empty subsets of indices strictly between i and j.
+            """ Map each index pair (i, j) to all non-empty subsets of indices strictly in between.
                 If i and j are adjacent, also include each individually as possible subsets.
             """
             index_pair_subsets = defaultdict(list)
             for i in range(seq_length):
                 for j in range(i + 1, seq_length):
-                    mids = list(range(i + 1, j))  # indices strictly between i and j
-                    if not mids:
+                    mid = list(range(i + 1, j))  # indices strictly in between
+                    if not mid:
                         # i and j are adjacent → allow deleting i or j individually
                         index_pair_subsets[(i, j)].append((i,))
                         index_pair_subsets[(i, j)].append((j,))
                     else:
-                        for r in range(1, len(mids) + 1):
-                            for sub in combinations(mids, r):
+                        for r in range(1, len(mid) + 1):
+                            for sub in combinations(mid, r):
                                 index_pair_subsets[(i, j)].append(sub)
             return index_pair_subsets
 
         new_sets = set()
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
         subset_dict = subset_to_index_pairs(len(seq))
-        # Idea- try to pick arbitrary pairs and delete every subset in between
+        # Idea is to pick arbitrary pairs and delete every subset in between
         for i, j in combinations(range(len(seq)), 2):
             for sub in subset_dict[(i, j)]:
                 ranges = [seq.get_range(seq[x]) for x in sub]
@@ -270,7 +270,7 @@ class AronsonSet:
     # For sequences with only backward and self-referring elements (otherwise use forward_fix)
     def forward_generate(self, seq: AronsonSequence = None):
         """
-        Generate by searching within a bounded search space for valid ordinals to append
+        Generate by searching within a bounded search space for valid ordinals
         :param seq: to append to
         :return: generated sequence
         """
@@ -330,7 +330,7 @@ class AronsonSet:
     def forward_fix(self, seq: AronsonSequence) -> set[AronsonSequence]:
         """
         Generate by searching within a bounded search space for valid ordinals to append.
-        Also "correct" existing sequence elements if necessary
+        Also, "correct" existing sequence elements if necessary
         :param seq: to append to
         :return: generated sequences
         """
@@ -339,11 +339,11 @@ class AronsonSet:
         sentence_len = len(seq.get_sentence())
 
         # all elements which refer forward and can be changed without breaking correctness
-        forward_inds = {i for i, x in enumerate(elements) if seq.get_ref(x) == Refer.FORWARD and all(
+        forward_indices = {i for i, x in enumerate(elements) if seq.get_ref(x) == Refer.FORWARD and all(
             y not in range(min(seq.get_range(x)), sentence_len) for y in elements if y != x)}
         ord_key = len(str(sentence_len))
         upper_bound = sentence_len + ORD_TABLE[ord_key]
-        for i in forward_inds:
+        for i in forward_indices:
             for candidate_back in range(1, upper_bound):
                 lower_bound = min(seq.get_range(seq[i]))
                 for candidate_forward in range(lower_bound, upper_bound):
@@ -478,6 +478,10 @@ class AronsonSet:
         :param full: to use for generation
         :return: new instance with set_op applied
         """
+        def search_dict(cur_seq, cur_set):
+            """ helper for getting iterations in which a sequence is added to iter_dict"""
+            return (i for i, s in cur_set.iter_dict.items() if cur_seq in s)
+
         if self.letter != other.letter:
             raise ValueError("Mismatched letters: sets must use the same letter.")
 
@@ -495,7 +499,7 @@ class AronsonSet:
         if result:
             # Always retain the empty set
             new_iter_dict[0].add(AronsonSequence(set1.letter, [], set1.direction))
-        search_dict = lambda cur_seq, cur_set: (i for i, s in cur_set.iter_dict.items() if cur_seq in s)
+
         for elem in result:
             # float('inf') is default val in case not found
             for_seq = list(elem)

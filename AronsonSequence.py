@@ -380,7 +380,7 @@ class AronsonSequence:
         """
          += operator
         :param other: sequence
-        :return: self with other.elements appended
+        :return: self with elements of other appended
         """
         if self.display_letter != other.get_letter() or self.direction != other.get_direction():
             raise ValueError("Letter and direction must be the same")

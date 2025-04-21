@@ -14,7 +14,7 @@ class AronsonSetTests(unittest.TestCase):
         Checks that upper bound on lengths of ordinals per range is correct. Not an exact test but good enough
         :return:
         """
-        # can't test all ordinals- takes too long
+        # can't test all ordinals, this takes too long
         for i in range(2, 11):
             lower, upper = 10 ** (i - 2), 10 ** (i - 1)
             limit = ORD_TABLE[i]

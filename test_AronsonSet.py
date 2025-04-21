@@ -403,7 +403,7 @@ class AronsonSetTests(unittest.TestCase):
     def test_generate_from_rules(self):
         self.check_generation_method("generate_from_rules")
 
-    def test_diff(self):
+    def test_sub(self):
         aset_empty = AronsonSet('t')
         singletons = aset_empty.generate_singletons()
         aset_singletons = AronsonSet.from_set(singletons)
@@ -438,9 +438,101 @@ class AronsonSetTests(unittest.TestCase):
 
     def test_and(self):
         # check same
-        intersect = (AronsonSet('t').__and__(AronsonSet('t', Direction.BACKWARD), 1)).get_seen_seqs()
+        aset = AronsonSet('t')
+        emp_set = aset.copy()
+        aset.generate_from_rules(1)
+        self.assertEqual(aset & emp_set, emp_set)
+        aset_back = AronsonSet('t', Direction.BACKWARD)
+        intersect = (aset.__and__(aset_back, 1)).get_seen_seqs()
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
             self.assertIn(seq, intersect)
+
+    def test_iand(self):
+        # Test in-place intersection
+        aset1 = AronsonSet('t')
+        aset2 = aset1.copy()
+        aset1.generate_from_rules(1)
+        aset2.generate_from_rules(1)
+
+        # Intersection with self should be identity
+        aset1 &= aset2
+        self.assertEqual(aset1, aset2)
+
+        # Intersection with empty set
+        empty_set = AronsonSet('t')
+        aset1 &= empty_set
+        self.assertEqual(aset1, empty_set)
+
+    def test_ior(self):
+        # Test in-place union
+        empty_set = AronsonSet('t', Direction.BACKWARD)
+        valid_seq = AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
+        valid_set = AronsonSet.from_sequence(valid_seq)
+
+        # Union with empty set
+        empty_set |= valid_set
+        self.assertEqual(empty_set, valid_set)
+
+        # Union with non-empty set
+        another_seq = AronsonSequence('t', [19], Direction.BACKWARD)
+        both_set = AronsonSet.from_set({valid_seq, another_seq})
+        another_set = AronsonSet.from_sequence(another_seq)
+        empty_set |= another_set
+        self.assertEqual(empty_set, both_set)
+
+    def test_isub(self):
+        # Test in-place subtraction
+        aset = AronsonSet('t')
+        seq1 = AronsonSequence('t', [4])
+        seq2 = AronsonSequence('t', [19])
+        aset |= AronsonSet.from_set({seq1, seq2})
+
+        # Subtract identical set
+        aset -= AronsonSet.from_set({seq1, seq2})
+        self.assertEqual(aset, AronsonSet('t'))
+
+        # Subtract subset with n=1
+        aset |= AronsonSet.from_set({seq1, seq2})
+        subset = AronsonSet.from_set({seq1})
+        aset -= subset
+        self.assertEqual(aset, AronsonSet.from_sequence(seq2))
+
+    def test_getitem(self):
+        aset = AronsonSet('t')
+        aset.generate_from_rules(1)
+        self.assertTrue(all(len(seq) == i for seq in aset[i]) for i in range(2))
+
+    def test_contains(self):
+        aset = AronsonSet('t')
+        self.assertTrue(AronsonSequence('t') in aset[0])
+        aset.generate_from_rules(1)
+        singleton_elems = [1, 4, 10, 12, 19, 21, 22]
+        for elem in singleton_elems:
+            self.assertTrue(AronsonSequence('t', [elem]) in aset[1])
+
+    def test_get_letter(self):
+        aset = AronsonSet('t')
+        # make sure display_letter() method works as expected
+        self.assertNotEqual(aset.get_letter(), 't')
+
+    def test_len(self):
+        aset = AronsonSet.from_sequence(AronsonSequence('t', [1]))
+        self.assertEqual(len(aset), 2)
+        aset.clear()
+        self.assertEqual(len(aset), 1)
+
+    def test_hash(self):
+        aset = AronsonSet('t')
+        for other in {AronsonSet('t', Direction.BACKWARD), AronsonSet.from_sequence(AronsonSequence('t', [1])),
+                      AronsonSet('d')}:
+            self.assertEqual(hash(aset) == hash(other), aset == other)
+
+    def test_is_hashable(self):
+        aset = AronsonSequence('t')
+        s = set()
+        # set is hashable
+        s.add(aset)
+        self.assertIn(aset, s)
 
 
 if __name__ == '__main__':

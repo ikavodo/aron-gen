@@ -85,7 +85,7 @@ class AronsonSequenceTests(unittest.TestCase):
                 self.assertIn(part, seq.get_sentence())
 
     def test_has_forward_refer(self):
-        # check that has_forward_referring() method works correctly
+        # check that has_forward_ref() method works correctly
         test_cases = [
             # backwards referring in both directions
             (AronsonSequence('t', [1, 4, 11], Direction.FORWARD), False),
@@ -105,7 +105,7 @@ class AronsonSequenceTests(unittest.TestCase):
 
         for seq, expected in test_cases:
             with self.subTest(seq=seq):
-                self.assertEqual(seq.has_forward_referring(), expected)
+                self.assertEqual(seq.has_forward_ref(), expected)
 
     def test_all_refers(self):
         # check that refer_dictionaries are correct

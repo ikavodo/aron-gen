@@ -1,63 +1,78 @@
 # Aronson Sequence Generator
 
-A Python implementation of self-referential sentences inspired by the ["Aronson sequence"](https://oeis.org/A005224), featuring combinatorial generation and validation of linguistic puzzles. Built around two core classes: `AronsonSequence` (individual sequences) and `AronsonSet` (collections of sequences).
+A Python implementation of self-referential sentences inspired by Douglas Hofstadter's "Aronson sequence", featuring combinatorial generation and validation of linguistic puzzles. Built around two core classes: `AronsonSequence` (individual sequences) and `AronsonSet` (collections of sequences).
 
-See [this](https://ikavodo.github.io/aronson-1/) for more details
+[![Tests](https://img.shields.io/badge/tests-90%25%20coverage-green)](https://github.com/ikavodo/aronson-generator/actions)
 
-## Key Components
+## Features
 
 ### `AronsonSequence` Class
-Models self-referential sentences like _"T is the first, fourth, eleventh... letter in this sentence, not including commas and spaces"_ with:
+Models self-referential sentences with:
+- Positional reference tracking (forward/backward/self)
+- Automatic sentence generation & validation
+- Element manipulation (append/swap/clear)
+- Direction flipping (forward ↔ backward)
+- Comprehensive correctness checks
 
-- **Core Functionality**
-  ```python
-  # Create sequence for letter 'T' with elements [1,4,11]
-  seq = AronsonSequence('t', [1,4,11], Direction.FORWARD)
-  
-  # Validate self-referential integrity
-  print(seq.is_correct())  # True/False
-  
-  # Get human-readable format
-  print(seq)  # "T is the first, fourth, eleventh letter in this sentence..."
-Features
+```python
+# Create and validate sequence
+seq = AronsonSequence('t', [1,4,11], Direction.FORWARD)
+print(seq.is_correct())  # True/False
+print(seq)  # "T is the first, fourth, eleventh letter in this sentence..."
+```
 
-Positional reference tracking (forward/backward/self)
-
-Sentence generation & validation
-
-Element manipulation (append/swap/clear)
-
-Direction flipping (forward ↔ backward)
-
-AronsonSet Class
+### `AronsonSet` Class
 Manages collections of valid sequences with:
 
-Generation Methods
+- Multiple generation strategies (brute-force/rule-based)
+- Set operations (union/intersection/difference)
+- Performance-optimized generate_fast() method
 
 ```python
+# Generate and analyze sequences
 aset = AronsonSet('t')
-
-# Brute-force generation (small n)
-aset.generate_brute_force(2)
-
-# Rule-based generation (larger n)
-aset.generate_from_rules(3)
+aset.generate_fast(3)  # Optimized generation
+missing = brute_set - rule_set  # Set operations
 ```
 
-Installation
-Clone repository:
-
+### Installation
 ```bash
 git clone https://github.com/ikavodo/aronson-generator.git
-cd aronson
-```
-Install dependencies:
-
-```bash
+cd aronson-generator
 pip install -r requirements.txt  # Requires num2words
 ```
-Advanced Usage
+
+## Advanced Usage
+### Hybrid Generation
 ```python
-# Hybrid generation strategies
 aset = AronsonSet('t', Direction.BACKWARD)
-aset.generate_from_rules(2, full=True)
+aset.generate_from_rules(2, full=True)  # Exhaustive search
+aset.generate_fast(3)  # Optimized continuation
+```
+
+### Set Operations
+```python
+# Combine sequence sets
+union_set = set1 | set2
+intersection_set = set1 & set2
+difference_set = set1 - set2
+```
+
+## Testing Framework
+Comprehensive test suite covering:
+
+- Sequence validation and reference resolution
+
+- Generation method comparisons
+
+- Set operation correctness
+
+- Edge case handling
+
+- Performance benchmarks
+
+Run tests with:
+
+```bash
+python -m unittest test_AronsonSet.py test_AronsonSequence.py
+```

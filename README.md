@@ -6,7 +6,7 @@ See https://ikavodo.github.io/aronson-1/ for more details
 ## Key Components
 
 ### `AronsonSequence` Class
-Models self-referential sentences like _"T is the first, fourth, eleventh... letter..."_ with:
+Models self-referential sentences like _"T is the first, fourth, eleventh... letter in this sentence, not including commas and spaces"_ with:
 
 - **Core Functionality**
   ```python

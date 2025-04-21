@@ -49,8 +49,8 @@ pip install -r requirements.txt  # Requires num2words
 ### Hybrid Generation
 ```python
 aset = AronsonSet('t', Direction.BACKWARD)
-aset.generate_from_rules(2, full=True)  # Exhaustive search
-aset.generate_fast(3)  # Optimized continuation
+aset.generate_from_rules(2, full=True)  # Exhaustive search, generates 67 sequences
+aset.generate_fast(3)  # Optimized continuation, generates 
 ```
 
 ### Set Operations

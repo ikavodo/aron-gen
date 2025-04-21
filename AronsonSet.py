@@ -401,6 +401,31 @@ class AronsonSet:
             filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
             self._update_iter(filtered)
 
+    def filter_elems(self, elems):
+        """
+        return all seen sequences including elements in elems
+        :param elems: for sequences
+        :return: set of seen sequences including elems
+
+        """
+        if not isinstance(elems, set):
+            raise ValueError("elements must be a set")
+        return {seq for seq in self.seen_seqs if all(elem in seq for elem in elems)}
+
+    def filter_refs(self, refs):
+        """
+        return all seen sequences including reference pointers in refs
+        :param refs: pointers for elements in sequence
+        :return: set of seen sequences including refs
+
+        """
+        if not isinstance(refs, set):
+            raise ValueError("refs must be a set")
+        return {
+            seq for seq in self.seen_seqs
+            if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})
+        }
+
     # Utility methods
     def copy(self):
         new_set = AronsonSet(self.letter, self.direction)

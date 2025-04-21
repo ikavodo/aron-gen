@@ -3,7 +3,7 @@ import unittest
 from functools import reduce
 
 from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE, n2w
-from AronsonSequence import AronsonSequence, Direction
+from AronsonSequence import AronsonSequence, Direction, Refer
 
 
 class AronsonSetTests(unittest.TestCase):
@@ -495,6 +495,27 @@ class AronsonSetTests(unittest.TestCase):
         subset = AronsonSet.from_set({seq1})
         aset -= subset
         self.assertEqual(aset, AronsonSet.from_sequence(seq2))
+
+    def test_filter_elems(self):
+        all_elems = [[11, 12, 15, 17, 25, 26, 27], [11, 13, 17, 20, 25, 27]]
+        for elems, direction in zip(all_elems, list(Direction)):
+            aset = AronsonSet('t', direction)
+            aset.generate_from_rules(2)
+            first = 1 if direction == Direction.FORWARD else 3
+            valid_continuations = {AronsonSequence('t', [first, p], direction) for p in elems}
+            filtered = aset.filter_elems({first})
+            for continuation in valid_continuations:
+                self.assertIn(continuation, filtered)
+
+    def test_filter_refs(self):
+        all_elems = [({1, 4}, {10, 12}, {19, 21, 22}), ({3, 4}, {8}, {19, 23, 24})]
+        for elems, direction in zip(all_elems, list(Direction)):
+            aset = AronsonSet('t', direction)
+            aset.generate_from_rules(1)
+            for elem, ref in zip(elems, list(Refer)):
+                filtered = aset.filter_refs({ref})
+                for e in elem:
+                    self.assertIn(AronsonSequence('t', [e], direction), filtered)
 
     def test_getitem(self):
         aset = AronsonSet('t')

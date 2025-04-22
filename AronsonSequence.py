@@ -78,8 +78,7 @@ class AronsonSequence:
 
         self.letter = letter.lower()
         self.direction = direction
-        self.sentence_repr = self._build_sentence_repr()
-        self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
+        self._update_sentence()
         self.refer_dict = self._build_refer_dict()
 
     @property
@@ -128,6 +127,8 @@ class AronsonSequence:
         """
         self.sentence_repr = self._build_sentence_repr()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
+        s = self.sentence if self.direction == Direction.FORWARD else self.sentence[::-1]
+        self.occurrences = {i + 1 for i, char in enumerate(s) if char == self.letter}
 
     def _build_sentence_repr(self):
         """
@@ -187,16 +188,14 @@ class AronsonSequence:
         """
         return any(ref == Refer.FORWARD for _, ref in self.refer_dict.values())
 
+    # save occurrences during initialization
     def get_occurrences(self, idx=None):
         """
         Returns the 1-based positions of `self.letter` in the sentence, respecting direction.
 
         :return: A list of positions where the letter occurs.
         """
-        s = self.sentence if self.direction == Direction.FORWARD else self.sentence[::-1]
-        if idx is not None:
-            s = s[:idx]
-        return {i + 1 for i, char in enumerate(s) if char == self.letter}
+        return {i for i in self.occurrences if i <= idx} if idx is not None else self.occurrences
 
     def is_complete(self):
         """

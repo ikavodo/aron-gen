@@ -18,9 +18,9 @@ Models self-referential sentences with:
 
 ```python
 # Create and validate sequence
-seq = AronsonSequence('t', [1,4,11], Direction.FORWARD)
-print(seq.is_correct())  # True
-print(seq)  # "T is the first, fourth, eleventh letter in this sentence..."
+seq1 = AronsonSequence('t', [1,4,11])
+print(seq1.is_correct())  # True
+print(seq1)  # "T is the first, fourth, eleventh letter in this sentence..."
 ```
 
 ### `AronsonSet` Class
@@ -32,10 +32,10 @@ Manages collections of valid sequences with:
 
 ```python
 # Generate and analyze sequences
-aset = AronsonSet('t')
-seq = aset.generate_aronson(3) # generates AronsonSequence('t', [1,4,11], Direction.FORWARD)
-print(aset.is_correct(seq) #True
-print(seq)  # "T is the first, fourth, eleventh letter in this sentence..."
+aset = AronsonSet('t', Direction.BACKWARD)
+seq2 = aset.generate_aronson(3) # generates AronsonSequence('t', [3,4,11], Direction.BACKWARD)
+print(aset.is_correct(seq2)) # True
+print(aset.is_correct(seq1)) # False, forward Aronson sequence is incorrect in a backward set
 ```
 
 ### Installation
@@ -56,11 +56,11 @@ aset.generate_fast(3)  # Optimized continuation, generates
 ### Set Operations
 ```python
 # Combine sequence sets
-set1 = AronsonSet('t', Direction.BACKWARD)
-set2 = AronsonSet('t', Direction.FORWARD)
-union_set = set1 | set2
-intersection_set = set1 & set2
-difference_set = set1 - set2
+set1 = AronsonSet.from_sequence(seq1)
+set2 = AronsonSet.from_sequence(seq2) 
+union_set = set1 | set2 # same as AronsonSet.from_set({seq1, seq2})
+intersection_set = set1 & set2 # returns empty forward set, same as AronsonSet('t') 
+difference_set = set1 - set2 # equals set1 because sets are complementary
 ```
 
 ## Testing Framework

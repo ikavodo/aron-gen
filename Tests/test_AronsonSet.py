@@ -495,6 +495,8 @@ class AronsonSetTests(unittest.TestCase):
 
     def test_sub(self):
         aset_empty = AronsonSet('t')
+        # difference with flipped direction allowed
+        self.assertEqual(aset_empty - AronsonSet('t', Direction.BACKWARD), aset_empty)
         singletons = aset_empty.generate_singletons()
         aset_singletons = AronsonSet.from_set(singletons)
         self.assertEqual(aset_singletons - aset_singletons, aset_empty)
@@ -574,6 +576,10 @@ class AronsonSetTests(unittest.TestCase):
     def test_isub(self):
         # Test in-place subtraction
         aset = AronsonSet('t')
+        aset_cpy = aset.copy()
+        aset -= AronsonSet('t', Direction.BACKWARD)
+        self.assertEqual(aset_cpy, aset)
+
         seq1 = AronsonSequence('t', [4])
         seq2 = AronsonSequence('t', [19])
         aset |= AronsonSet.from_set({seq1, seq2})

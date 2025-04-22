@@ -616,8 +616,9 @@ class AronsonSet:
         :param full: for generating
         :return: set instance
         """
-
-        return self._set_operation_core(other, set.difference, n, full)
+        # take difference with intersection (which has same direction) if directions not aligned
+        return self._set_operation_core(other, set.difference, n, full) if self.direction == other.direction else \
+            self._set_operation_core(self & other, set.difference, n, full)
 
     def __isub__(self, other: 'AronsonSet', n: int = 0, full=False):
         """
@@ -627,7 +628,9 @@ class AronsonSet:
         :param full: for generating
         :return: set instance
         """
-        result = self._set_operation_core(other, set.difference, n, full)
+        # take difference with intersection (which has same direction) if directions not aligned
+        result = self._set_operation_core(other, set.difference, n, full) if self.direction == other.direction else \
+            self._set_operation_core(self & other, set.difference, n, full)
         self.cur_iter = n
         self.set_iter_dict(result.get_iter_dict())
         return self

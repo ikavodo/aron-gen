@@ -33,6 +33,7 @@ Manages collections of valid sequences with:
 ```python
 # Generate and analyze sequences
 aset = AronsonSet('t', Direction.BACKWARD)
+seq1 = AronsonSequence('t', [1,4,11])
 seq2 = aset.generate_aronson(3) # generates AronsonSequence('t', [3,4,11], Direction.BACKWARD)
 print(aset.is_correct(seq2)) # True
 print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
@@ -41,6 +42,7 @@ print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
 ## Advanced Usage
 ### Hybrid Generation
 ```python
+aset = AronsonSet('t', Direction.BACKWARD)
 aset.generate_from_rules(2, full=True) # Exhaustive search
 print(len(aset)) # 67
 aset.generate_fast(3)  # Optimized continuation
@@ -50,8 +52,11 @@ print(len(aset)) # 198
 ### Set Operations
 ```python
 # Combine sequence sets
-set1 = AronsonSet.from_sequence(seq1) 
+seq1 = AronsonSequence('t', [1,4,11])
+seq2 = AronsonSequence('t', [10, 12])
+set1 = AronsonSet.from_sequence(seq1)
 set2 = AronsonSet.from_sequence(seq2) 
+
 union_set = set1 | set2 # same as AronsonSet.from_set({seq1, seq2})
 intersection_set = set1 & set2 # returns empty forward set, same as AronsonSet('t') 
 difference_set = set1 - set2 # equals set1 because sets are complementary

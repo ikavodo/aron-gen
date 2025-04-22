@@ -35,7 +35,7 @@ Manages collections of valid sequences with:
 aset = AronsonSet('t', Direction.BACKWARD)
 seq2 = aset.generate_aronson(3) # generates AronsonSequence('t', [3,4,11], Direction.BACKWARD)
 print(aset.is_correct(seq2)) # True
-print(aset.is_correct(seq1)) # False, forward Aronson sequence is incorrect in a backward set
+print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
 ```
 
 ## Advanced Usage

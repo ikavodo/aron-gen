@@ -1,5 +1,5 @@
 from itertools import islice, combinations, permutations
-from AronsonSequence import AronsonSequence, n2w, Refer, Direction, LEN_PREFIX, LEN_SUFFIX
+from AronsonSequence import AronsonSequence, Refer, Direction, LEN_PREFIX, LEN_SUFFIX
 from collections import defaultdict
 from typing import Callable
 from functools import reduce
@@ -178,7 +178,7 @@ class AronsonSet:
                 break
             idx += idx_rel
             yield idx
-            s = s[idx_rel:] + (n2w(idx) if self.direction == Direction.FORWARD else n2w(idx)[::-1])
+            s = s[idx_rel:] + (seq.n2w(idx) if self.direction == Direction.FORWARD else seq.n2w(idx)[::-1])
 
     # For well-behaved sequences (no forward referring!)
     def backward_generate(self, n: int, seq: AronsonSequence = None):

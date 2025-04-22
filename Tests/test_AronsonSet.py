@@ -3,9 +3,20 @@ import unittest
 import time
 from functools import reduce
 from itertools import combinations
-
-from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE, n2w
+from num2words import num2words
+from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE
 from AronsonSequence import AronsonSequence, Direction, Refer
+
+
+def n2w(n):
+    """
+    Converts a number n to its ordinal word representation.
+
+    :param n: The number to convert.
+    :return: The ordinal word representation of the number.
+    """
+    os = num2words(n, ordinal=True).replace(" and", "")
+    return os.replace(", ", "").replace(" ", "").replace("-", "")
 
 
 class AronsonSetTests(unittest.TestCase):
@@ -533,7 +544,7 @@ class AronsonSetTests(unittest.TestCase):
         aset.generate_from_rules(1)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
-        intersect = (aset.__and__(aset_back, 1, full=True)).get_seen_seqs()
+        intersect = (aset.__and__(aset_back, 3, full=True)).get_seen_seqs()
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
             self.assertIn(seq, intersect)
 

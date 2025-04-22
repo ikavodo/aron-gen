@@ -1,3 +1,4 @@
+from collections import defaultdict
 from enum import Enum
 from num2words import num2words
 from typing import Optional
@@ -10,17 +11,6 @@ LEN_PREFIX = len(PREFIX.replace(" ", "")) + 1
 LEN_SUFFIX = len(SUFFIX.replace(" ", ""))
 REPR_FORWARD = " in this sentence, not counting commas and spaces"
 REPR_BACKWARD = "Not counting commas and spaces, in this sentence backwards "
-
-
-def n2w(n):
-    """
-    Converts a number n to its ordinal word representation.
-
-    :param n: The number to convert.
-    :return: The ordinal word representation of the number.
-    """
-    os = num2words(n, ordinal=True).replace(" and", "")
-    return os.replace(", ", "").replace(" ", "").replace("-", "")
 
 
 class Refer(Enum):
@@ -55,6 +45,18 @@ class AronsonSequence:
     f"{letter} is the {ordinal(elements[-1])}, {ordinal(elements[-2])}... letter".
     See https://ikavodo.github.io/aronson-1/ for more information
     """
+
+    num2words_dict = defaultdict(tuple)
+
+    @classmethod
+    def n2w(cls, n, stripped=True):
+        """
+        Memoized conversion of a number to its ordinal word representation (stripped of spaces, commas, etc).
+        """
+        if n not in cls.num2words_dict:
+            os = num2words(n, ordinal=True)
+            cls.num2words_dict[n] = (os, os.replace(" and", "").replace(", ", "").replace(" ", "").replace("-", ""))
+        return cls.num2words_dict[n][0] if not stripped else cls.num2words_dict[n][1]
 
     def __init__(self, letter: str, elements: Optional[list[int]] = None, direction: Direction = Direction.FORWARD):
         """
@@ -134,8 +136,8 @@ class AronsonSequence:
         :return: The string representation of the sequence.
         """
         elem_ord = self.elements if self.direction == Direction.FORWARD else self.elements[::-1]
-        return f"{self.letter + PREFIX}{', '.join(num2words(i, ordinal=True) for i in elem_ord)}{SUFFIX}".replace("  ",
-                                                                                                                  " ")
+        return f"{self.letter + PREFIX}{', '.join(self.n2w(i, stripped=False) for i in elem_ord)}{SUFFIX}".replace(
+            "  ", " ")
 
     def _get_refer_val(self, elem):
         """
@@ -146,7 +148,7 @@ class AronsonSequence:
                 ref: where element points to within the string compared to the position
         """
         target_elem = elem - 1
-        rep = n2w(elem)
+        rep = self.n2w(elem, stripped=True)
         pos = self.sentence.find(rep) if self.direction == Direction.FORWARD else self.sentence[::-1].find(
             rep[::-1])
         end = pos + len(rep)

@@ -1,8 +1,7 @@
 import unittest
 from num2words import num2words
-from AronsonSequence import n2w, AronsonSequence, PREFIX, SUFFIX, Refer, Direction, REPR_FORWARD, \
+from AronsonSequence import AronsonSequence, PREFIX, SUFFIX, Refer, Direction, REPR_FORWARD, \
     REPR_BACKWARD, LEN_PREFIX, LEN_SUFFIX
-
 
 class AronsonSequenceTests(unittest.TestCase):
     """ unit test for AronsonSet"""
@@ -73,11 +72,12 @@ class AronsonSequenceTests(unittest.TestCase):
 
     def test_sentence(self):
         # test that the internal sentence is correct, use something with hyphen
-        suffix = PREFIX.replace(" ", "") + n2w(25) + SUFFIX.replace(" ", "")
+        seq = AronsonSequence('t')
+        suffix = PREFIX.replace(" ", "") + seq.n2w(25) + SUFFIX.replace(" ", "")
         elems = [3, 4]
         test_sequences = [
             (AronsonSequence('t', [25], Direction.FORWARD), suffix),
-            (AronsonSequence('t', elems, Direction.BACKWARD), ''.join([n2w(i) for i in elems[::-1]]))
+            (AronsonSequence('t', elems, Direction.BACKWARD), ''.join([seq.n2w(i) for i in elems[::-1]]))
         ]
 
         for seq, part in test_sequences:
@@ -397,7 +397,7 @@ class AronsonSequenceTests(unittest.TestCase):
         seq.flip_direction()
         seq.set_elements([7, 7, 8], append=True)
         last_elements = seq.get_elements()[-2:][::-1]
-        self.assertIn(''.join(n2w(elem) for elem in last_elements), seq.get_sentence())
+        self.assertIn(''.join(seq.n2w(elem) for elem in last_elements), seq.get_sentence())
         # Now check if the order of elements is consistent
         self.assertEqual(seq.get_sentence(),
                          AronsonSequence('t', [1, 2, 3, 4, 5, 6, 7, 8], Direction.BACKWARD).get_sentence())

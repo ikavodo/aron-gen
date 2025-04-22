@@ -41,8 +41,10 @@ print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
 ## Advanced Usage
 ### Hybrid Generation
 ```python
-aset.generate_from_rules(2, full=True)  # Exhaustive search, generates 67 sequences total
-aset.generate_fast(3)  # Optimized continuation, generates 238 sequences total
+aset.generate_from_rules(2, full=True) # Exhaustive search
+print(len(aset)) # 67
+aset.generate_fast(3)  # Optimized continuation
+print(len(aset)) # 238
 ```
 
 ### Set Operations

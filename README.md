@@ -41,8 +41,8 @@ print(aset.is_correct(seq1)) # False, forward Aronson sequence is incorrect in a
 ## Advanced Usage
 ### Hybrid Generation
 ```python
-aset.generate_from_rules(2, full=True)  # Exhaustive search, generates 67 sequences
-aset.generate_fast(3)  # Optimized continuation, generates 
+aset.generate_from_rules(2, full=True)  # Exhaustive search, generates 67 sequences total
+aset.generate_fast(3)  # Optimized continuation, generates 238 sequences total
 ```
 
 ### Set Operations

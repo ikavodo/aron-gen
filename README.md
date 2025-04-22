@@ -50,7 +50,7 @@ print(len(aset)) # 198
 ### Set Operations
 ```python
 # Combine sequence sets
-set1 = AronsonSet.from_sequence(seq1) # same as 
+set1 = AronsonSet.from_sequence(seq1) 
 set2 = AronsonSet.from_sequence(seq2) 
 union_set = set1 | set2 # same as AronsonSet.from_set({seq1, seq2})
 intersection_set = set1 & set2 # returns empty forward set, same as AronsonSet('t') 

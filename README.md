@@ -57,12 +57,12 @@ seq2 = AronsonSequence('t', [10, 12])
 set1 = AronsonSet.from_sequence(seq1)
 set2 = AronsonSet.from_sequence(seq2) 
 
-union_set = set1 | set2 # same as constructor from_set() 
-assert(union_set == AronsonSet.from_set({seq1, seq2})) # True
-intersection_set = set1 & set2 # returns empty forward set
-assert(intersection_set == AronsonSet('t')) # True
-difference_set = set1 - set2 # sets are complementary
-assert(difference_set == set1) # True
+union_set = set1 | set2 
+assert(union_set == AronsonSet.from_set({seq1, seq2})) # same as constructor from_set() 
+intersection_set = set1 & set2 
+assert(intersection_set == AronsonSet('t')) # intersection is empty forward set
+difference_set = set1 - set2 
+assert(difference_set == set1) # sets are complementary
 ```
 
 ## Installation

@@ -38,17 +38,9 @@ print(aset.is_correct(seq2)) # True
 print(aset.is_correct(seq1)) # False, forward Aronson sequence is incorrect in a backward set
 ```
 
-### Installation
-```bash
-git clone https://github.com/ikavodo/aronson-generator.git
-cd aronson
-pip install -r requirements.txt  # Requires num2words
-```
-
 ## Advanced Usage
 ### Hybrid Generation
 ```python
-aset = AronsonSet('t', Direction.BACKWARD)
 aset.generate_from_rules(2, full=True)  # Exhaustive search, generates 67 sequences
 aset.generate_fast(3)  # Optimized continuation, generates 
 ```
@@ -63,7 +55,14 @@ intersection_set = set1 & set2 # returns empty forward set, same as AronsonSet('
 difference_set = set1 - set2 # equals set1 because sets are complementary
 ```
 
-## Testing Framework
+## Installation
+```bash
+git clone https://github.com/ikavodo/aronson-generator.git
+cd aronson
+pip install -r requirements.txt  # Requires num2words
+```
+
+### Testing Framework
 Comprehensive test suite covering:
 
 - Sequence validation and reference resolution

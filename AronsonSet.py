@@ -589,6 +589,8 @@ class AronsonSet:
         :param full: for generating
         :return: set instance
         """
+        if self.direction != other.direction:
+            raise ValueError("sets must have same direction")
         return self._set_operation_core(other, set.union, n, full)
 
     def __ior__(self, other: 'AronsonSet', n: int = 0, full=False):
@@ -599,6 +601,8 @@ class AronsonSet:
         :param full: for generating
         :return: set instance
         """
+        if self.direction != other.direction:
+            raise ValueError("sets must have same direction")
         result = self._set_operation_core(other, set.union, n, full)
         self.cur_iter = n
         self.set_iter_dict(result.get_iter_dict())

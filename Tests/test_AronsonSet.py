@@ -91,6 +91,9 @@ class AronsonSetTests(unittest.TestCase):
     def test_or_singleton(self):
         empty_seq = AronsonSequence('t', [], Direction.BACKWARD)
         empty_set = AronsonSet.from_sequence(empty_seq)
+        with self.assertRaises(ValueError):
+            # can't take union of sets with different directions
+            AronsonSet('t') | empty_set
         valid = AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
         singleton1 = AronsonSet.from_sequence(valid)
         union_set1 = singleton1 | empty_set
@@ -551,6 +554,9 @@ class AronsonSetTests(unittest.TestCase):
     def test_ior(self):
         # Test in-place union
         empty_set = AronsonSet('t', Direction.BACKWARD)
+        with self.assertRaises(ValueError):
+            # can't take union of sets with different directions
+            AronsonSet('t') | empty_set
         valid_seq = AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
         valid_set = AronsonSet.from_sequence(valid_seq)
 
@@ -641,16 +647,17 @@ class AronsonSetTests(unittest.TestCase):
         self.assertIn(aset, s)
 
     def test_continue_generation(self):
-        aset = AronsonSet('t')
-        aset.generate_fast(2)
-        aset2 = AronsonSet('t')
-        aset2.generate_from_rules(2, full=True)
-        self.assertNotEqual(aset, aset2)
-        # now flip use of generators for next iteration
-        aset.generate_from_rules(3, full=False)
-        aset2.generate_fast(3)
-        # not the same sets
-        self.assertNotEqual(aset, aset2)
+        for direction in list(Direction):
+            aset = AronsonSet('t', direction)
+            aset.generate_fast(2)
+            aset2 = AronsonSet('t', direction)
+            aset2.generate_from_rules(2, full=True)
+            self.assertNotEqual(aset, aset2)
+            # now flip use of generators for next iteration
+            aset.generate_from_rules(3, full=False)
+            aset2.generate_fast(3)
+            # not the same sets
+            self.assertNotEqual(aset, aset2)
 
 
 if __name__ == '__main__':

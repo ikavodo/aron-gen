@@ -44,13 +44,13 @@ print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
 aset.generate_from_rules(2, full=True) # Exhaustive search
 print(len(aset)) # 67
 aset.generate_fast(3)  # Optimized continuation
-print(len(aset)) # 238
+print(len(aset)) # 198
 ```
 
 ### Set Operations
 ```python
 # Combine sequence sets
-set1 = AronsonSet.from_sequence(seq1)
+set1 = AronsonSet.from_sequence(seq1) # same as 
 set2 = AronsonSet.from_sequence(seq2) 
 union_set = set1 | set2 # same as AronsonSet.from_set({seq1, seq2})
 intersection_set = set1 & set2 # returns empty forward set, same as AronsonSet('t') 

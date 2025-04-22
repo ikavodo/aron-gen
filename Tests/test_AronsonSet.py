@@ -27,7 +27,7 @@ class AronsonSetTests(unittest.TestCase):
     # Constructors
     def test_initialization(self):
         # Test valid initialization
-        for direction in list(Direction):
+        for direction in Direction:
             with self.subTest(direction=direction):
                 aset = AronsonSet('t', direction)
                 self.assertEqual(aset.display_letter, 'T')
@@ -230,7 +230,7 @@ class AronsonSetTests(unittest.TestCase):
             new_seqs = get_new_seqs(aset)
             self.assertEqual(new_seqs, {targ_seq})
 
-        for direction in list(Direction):
+        for direction in Direction:
             # forward referring
             forward_ref = AronsonSequence('t', [19], direction)
             aset = AronsonSet.from_sequence(forward_ref)
@@ -260,7 +260,7 @@ class AronsonSetTests(unittest.TestCase):
                 self.assertTrue(seq.is_prefix_complete())
 
         # Letter doesn't allow generating more.
-        for direction in set(Direction):
+        for direction in Direction:
             aset = AronsonSet('a', direction)
             with self.assertRaises(GenError):
                 aset.generate_aronson(2)
@@ -328,7 +328,7 @@ class AronsonSetTests(unittest.TestCase):
         # taking subset of empty sequence elements does nothing
         self.assertEqual(empty_set.subset(empty_seq), set())
 
-        for direction in list(Direction):
+        for direction in Direction:
             empty_set = AronsonSet('t', direction)
             seq = empty_set.generate_aronson(3).pop()
             # prepare for
@@ -647,7 +647,7 @@ class AronsonSetTests(unittest.TestCase):
         self.assertIn(aset, s)
 
     def test_continue_generation(self):
-        for direction in list(Direction):
+        for direction in Direction:
             aset = AronsonSet('t', direction)
             aset.generate_fast(2)
             aset2 = AronsonSet('t', direction)

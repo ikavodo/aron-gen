@@ -262,7 +262,7 @@ class AronsonSequenceTests(unittest.TestCase):
                 self.assertEqual(seq.get_prefix_missing(), expected)
 
     def test_set_elements_append(self):
-        for direction in set(Direction):
+        for direction in Direction:
             suffix_ind = len(SUFFIX) + len(REPR_FORWARD) if direction == Direction.FORWARD else len(REPR_BACKWARD)
 
             for append_flag in [True, False]:
@@ -328,7 +328,7 @@ class AronsonSequenceTests(unittest.TestCase):
         self.assertEqual(seq.get_range(1), range(LEN_SUFFIX, len(seq.get_sentence()) - LEN_PREFIX))
 
     def test_get_ref(self):
-        for direction in set(Direction):
+        for direction in Direction:
             seq = AronsonSequence('t', [], direction)
             with self.assertRaises(ValueError):
                 seq.get_ref(1)

@@ -18,7 +18,7 @@ Models self-referential sentences with:
 
 ```python
 # Create and validate sequence
-seq1 = AronsonSequence('t', [1,4,11])
+seq1 = AronsonSequence('t', [1, 4, 11])
 print(seq1.is_correct())  # True
 print(seq1)  # "T is the first, fourth, eleventh letter in this sentence..."
 ```
@@ -33,8 +33,8 @@ Manages collections of valid sequences with:
 ```python
 # Generate and analyze sequences
 aset = AronsonSet('t', Direction.BACKWARD)
-seq1 = AronsonSequence('t', [1,4,11])
-seq2 = aset.generate_aronson(3) # generates AronsonSequence('t', [3,4,11], Direction.BACKWARD)
+seq1 = AronsonSequence('t', [1, 4, 11])
+seq2 = aset.generate_aronson(3) # generates AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
 print(aset.is_correct(seq2)) # True
 print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
 ```
@@ -52,7 +52,7 @@ print(len(aset)) # 198
 ### Set Operations
 ```python
 # Combine sequence sets
-seq1 = AronsonSequence('t', [1,4,11])
+seq1 = AronsonSequence('t', [1, 4, 11])
 seq2 = AronsonSequence('t', [10, 12])
 set1 = AronsonSet.from_sequence(seq1)
 set2 = AronsonSet.from_sequence(seq2) 

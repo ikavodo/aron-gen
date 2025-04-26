@@ -515,11 +515,12 @@ class AronsonSetTests(unittest.TestCase):
         # should include the empty set!
         self.assertEqual(diff, aset_singletons)
 
+    # Not passing this test for 3 iterations
     def test_missing_sentences(self):
         aset_brute = AronsonSet('t')
-        aset_brute.generate_brute_force(2)
+        aset_brute.generate_brute_force(3)
         aset_rules = AronsonSet('t')
-        aset_rules.generate_from_rules(2, full=True)
+        aset_rules.generate_from_rules(3)
         missing = aset_brute - aset_rules
         # {s for s in missing.filter_refs({Refer.BACKWARD}) if s.has_forward_ref() and not s.is_empty()}
         # Works
@@ -545,7 +546,7 @@ class AronsonSetTests(unittest.TestCase):
         aset.generate_from_rules(1)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
-        intersect = (aset.__and__(aset_back, 5, full=True)).get_seen_seqs()
+        intersect = (aset.__and__(aset_back, 5)).get_seen_seqs()
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
             self.assertIn(seq, intersect)
 
@@ -669,7 +670,7 @@ class AronsonSetTests(unittest.TestCase):
             aset = AronsonSet('t', direction)
             aset.generate_fast(2)
             aset2 = AronsonSet('t', direction)
-            aset2.generate_from_rules(2, full=True)
+            aset2.generate_from_rules(2)
             self.assertNotEqual(aset, aset2)
             # now flip use of generators for next iteration
             aset.generate_from_rules(3, full=False)

@@ -206,7 +206,6 @@ class AronsonSet:
         """ Wrapper for backward_generate() method with default arguments"""
         return self.backward_generate(n)
 
-    #   currently unused
     def swap(self, seq: AronsonSequence = None):
         """
         are allowed to swap two elements if the position to which any element points is unaffected by the swap
@@ -319,7 +318,7 @@ class AronsonSet:
         cur_ord_key = 2  # maximal ordinal with 2 digits
         while self.cur_iter < n_iterations:
             self.cur_iter += 1
-            upper_bound = self.cur_iter * ORD_TABLE[cur_ord_key] + 2 * max(LEN_PREFIX, LEN_SUFFIX)
+            upper_bound = 2 * (self.cur_iter * ORD_TABLE[cur_ord_key] + max(LEN_PREFIX, LEN_SUFFIX))
             if upper_bound >= 10 ** (cur_ord_key + 1):
                 # enlarge search range
                 cur_ord_key += 1
@@ -328,7 +327,7 @@ class AronsonSet:
             cur_seqs = {s for s in seqs if self.is_correct(s)}
             self._update_iter(cur_seqs)
 
-# this needs to be made more general. 
+    # this needs to be made more general.
     def forward_fix(self, seq: AronsonSequence) -> set[AronsonSequence]:
         """
         Generate by searching within a bounded search space for valid ordinals to append.
@@ -346,18 +345,19 @@ class AronsonSet:
         ord_key = len(str(sentence_len))
         upper_bound = sentence_len + ORD_TABLE[ord_key]
         for i in forward_indices:
-            # want to add this somewhere in element
+            # add this somewhere in sequence
             for candidate in range(1, upper_bound):
                 lower_bound = min(seq.get_range(seq[i]))
-                # want to fix the element addition
                 for potential_fix in range(lower_bound, upper_bound):
-                    new_elements = seq.get_elements().copy()
-                    # add a new index and 
-                    new_elements.append(candidate)
-                    new_elements[i] = potential_fix
-                    new_seq = AronsonSequence(seq.letter, new_elements, self.direction)
-                    if self.is_correct(new_seq):
-                        new_seqs.add(new_seq)
+                    # changed this to append at different possible indices. More computationally expensive
+                    for j in range(len(seq) + 1):
+                        new_elements = seq.get_elements().copy()
+                        new_elements = new_elements[:j] + [candidate] + new_elements[j:]
+                        # add a new index and
+                        new_elements[i] = potential_fix
+                        new_seq = AronsonSequence(seq.letter, new_elements, self.direction)
+                        if self.is_correct(new_seq):
+                            new_seqs.add(new_seq)
         return new_seqs
 
     def generate_from_rules(self, n_iterations: int, full=True):
@@ -383,6 +383,7 @@ class AronsonSet:
                     cur_seqs.update(self._handle_backward_rules(seq))
 
             if forward_seqs and not full:
+                # only one run
                 cur_seqs.update(self.forward_fix(max(forward_seqs,
                                                      key=lambda x: len(x.get_sentence()))))
 

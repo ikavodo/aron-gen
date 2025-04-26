@@ -281,7 +281,7 @@ class AronsonSet:
             # for generating all singleton AronsonSequences in first iteration
             lower_bound = 1
         else:
-            lower_bound = sentence_len - (LEN_SUFFIX if seq.direction == Direction.FORWARD else LEN_PREFIX)
+            lower_bound = sentence_len - (LEN_SUFFIX if seq.direction == Direction.FORWARD else LEN_PREFIX) - 1
         ord_key = len(str(sentence_len))
         upper_bound = sentence_len + ORD_TABLE[ord_key]
         new_seqs = set()
@@ -328,6 +328,7 @@ class AronsonSet:
             cur_seqs = {s for s in seqs if self.is_correct(s)}
             self._update_iter(cur_seqs)
 
+# this needs to be made more general. 
     def forward_fix(self, seq: AronsonSequence) -> set[AronsonSequence]:
         """
         Generate by searching within a bounded search space for valid ordinals to append.
@@ -345,12 +346,15 @@ class AronsonSet:
         ord_key = len(str(sentence_len))
         upper_bound = sentence_len + ORD_TABLE[ord_key]
         for i in forward_indices:
-            for candidate_back in range(1, upper_bound):
+            # want to add this somewhere in element
+            for candidate in range(1, upper_bound):
                 lower_bound = min(seq.get_range(seq[i]))
-                for candidate_forward in range(lower_bound, upper_bound):
+                # want to fix the element addition
+                for potential_fix in range(lower_bound, upper_bound):
                     new_elements = seq.get_elements().copy()
-                    new_elements.append(candidate_back)
-                    new_elements[i] = candidate_forward
+                    # add a new index and 
+                    new_elements.append(candidate)
+                    new_elements[i] = potential_fix
                     new_seq = AronsonSequence(seq.letter, new_elements, self.direction)
                     if self.is_correct(new_seq):
                         new_seqs.add(new_seq)

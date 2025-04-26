@@ -521,6 +521,7 @@ class AronsonSetTests(unittest.TestCase):
         aset_rules = AronsonSet('t')
         aset_rules.generate_from_rules(2, full=True)
         missing = aset_brute - aset_rules
+        # {s for s in missing.filter_refs({Refer.BACKWARD}) if s.has_forward_ref() and not s.is_empty()}
         # Works
         self.assertEqual(missing, AronsonSet('t'))
 
@@ -544,7 +545,7 @@ class AronsonSetTests(unittest.TestCase):
         aset.generate_from_rules(1)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
-        intersect = (aset.__and__(aset_back, 3, full=True)).get_seen_seqs()
+        intersect = (aset.__and__(aset_back, 5, full=True)).get_seen_seqs()
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
             self.assertIn(seq, intersect)
 

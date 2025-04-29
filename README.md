@@ -43,7 +43,7 @@ print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
 ### Hybrid Generation
 ```python
 aset = AronsonSet('t', Direction.BACKWARD)
-aset.generate_from_rules(2, full=True) # Exhaustive search
+aset.generate_brute_force(2) # Exhaustive search
 print(len(aset)) # 67
 aset.generate_fast(3)  # Optimized continuation
 print(len(aset)) # 198

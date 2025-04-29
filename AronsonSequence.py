@@ -35,6 +35,9 @@ class Direction(Enum):
     FORWARD = 1
     BACKWARD = 2
 
+    def opposite(self):
+        return Direction.BACKWARD if self == Direction.FORWARD else Direction.FORWARD
+
 
 class AronsonSequence:
     """
@@ -290,7 +293,7 @@ class AronsonSequence:
 
         Updates the sentence accordingly.
         """
-        self.direction = Direction.BACKWARD if self.direction == Direction.FORWARD else Direction.FORWARD
+        self.direction = self.direction.opposite()
         # need to update sentence
         self._update_sentence()
 

@@ -22,6 +22,8 @@ def n2w(n):
 class AronsonSetTests(unittest.TestCase):
     """ unit test for AronsonSet"""
 
+    maxDiff = None
+
     def test_ord_dict(self):
         """
         Checks that upper bound on lengths of ordinals per range is correct. Not an exact test but good enough
@@ -558,9 +560,9 @@ class AronsonSetTests(unittest.TestCase):
         aset.generate_brute_force(1)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
-        intersect = (aset.__and__(aset_back, 2)).get_seen_seqs()
+        intersect = (aset.__and__(aset_back, 3))
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
-            self.assertIn(seq, intersect)
+            self.assertIn(seq, intersect.get_seen_seqs())
 
     def test_iand(self):
         # Test in-place intersection

@@ -81,6 +81,7 @@ class AronsonSet:
         # do some tests on letter and direction
         AronsonSequence.check_letter(letter)
         AronsonSequence.check_direction(direction)
+        # used for pruning brute-force search space
         self.non_elements = {2, 3, 5, 6, 8, 9} if direction == Direction.FORWARD else {1, 2, 5, 6, 9, 10}
         self.letter = letter.lower()  # Letter used for generating sequences
         self.direction = direction  # Sequence direction
@@ -88,8 +89,9 @@ class AronsonSet:
         self.cur_iter = 0  # no generating iterations yet
         self.seen_seqs = {AronsonSequence(self.letter, [], self.direction)}  # every set contains empty sequence
         self.iter_dict[self.cur_iter] = self.seen_seqs.copy()
-        self.subset_dict = defaultdict(set)
-        self.correctness_cache = defaultdict(bool)
+        self.subset_dict = defaultdict(set) # used for fast generation
+        # for generating from rules
+        # self.correctness_cache = defaultdict(bool)
 
     @property
     def display_letter(self):
@@ -139,13 +141,13 @@ class AronsonSet:
         :return: True/False
         """
 
-        key = tuple(seq.get_elements())
-        if key not in self.correctness_cache:
-            self.correctness_cache[key] = seq.is_correct()
+        # key = tuple(seq.get_elements())
+        # if key not in self.correctness_cache:
+        #     self.correctness_cache[key] = seq.is_correct()
 
         return (
                 seq.get_letter() == self.display_letter and
-                seq.get_direction() == self.direction and self.correctness_cache[key]
+                seq.get_direction() == self.direction and seq.is_correct()
         )
 
     def is_complete(self, seq: AronsonSequence):
@@ -296,6 +298,8 @@ class AronsonSet:
 
         # make more efficient?
         for elem in range(lower_bound, upper_bound + 1):
+            if elem in self.non_elements:
+                continue
             candidate = seq.copy()
             candidate.append_elements([elem])
             # brute-force search within bounded search space

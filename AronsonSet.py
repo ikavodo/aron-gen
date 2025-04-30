@@ -322,9 +322,7 @@ class AronsonSet:
             return
 
         def is_valid_extension(elem, current_perm):
-            if elem in self.non_elements:
-                return False
-            if (elem - 1 in current_perm and elem - 2 in current_perm) or \
+            if elem in self.non_elements or (elem - 1 in current_perm and elem - 2 in current_perm) or \
                     (elem + 1 in current_perm and elem + 2 in current_perm):
                 return False
             return True

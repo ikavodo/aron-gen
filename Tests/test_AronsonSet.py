@@ -224,7 +224,7 @@ class AronsonSetTests(unittest.TestCase):
 
     def test_backward_search(self):
 
-        def get_new_seqs(aset):
+        def get_new_seqs(aset: AronsonSet):
             """ helper for getting rid of empty set in backward_search()"""
             new_seqs = [aset.backward_search(seq) for seq in aset.get_seen_seqs()]
             return reduce(lambda a, b: a.union(b), new_seqs)
@@ -376,23 +376,6 @@ class AronsonSetTests(unittest.TestCase):
             first = 1 if direction == Direction.FORWARD else 3
             valid_continuations = {AronsonSequence('t', [first, p], direction) for p in elems}
             self.assertTrue(valid_continuations.issubset(continuations))
-
-    # def test_forward_fix(self):
-    #     all_elems = [[AronsonSequence('t', [25, 1]), AronsonSequence('t', [26, 1]),
-    #                   AronsonSequence('t', [26, 4]), AronsonSequence('t', [29, 11])],
-    #                  [AronsonSequence('t', [20, 3], Direction.BACKWARD),
-    #                   AronsonSequence('t', [26, 4], Direction.BACKWARD),
-    #                   AronsonSequence('t', [25, 3], Direction.BACKWARD),
-    #                   AronsonSequence('t', [26, 8], Direction.BACKWARD),
-    #                   ]]
-    #     for elems, direction in zip(all_elems, list(Direction)):
-    #         aset = AronsonSet('t', direction)
-    #         seq = AronsonSequence('t', [19], direction)
-    #         self.assertTrue(seq.has_forward_ref())
-    #         check_seqs = aset.forward_fix(seq)
-    #         for s in elems:
-    #             self.assertTrue(aset.is_correct(s))
-    #             self.assertIn(s, check_seqs)
 
     def check_generation_method(self, method_name):
         all_elems = [([1, 4, 10, 12, 19, 21, 22], [11, 12, 15, 17, 25, 26, 27]),
@@ -712,6 +695,15 @@ class AronsonSetTests(unittest.TestCase):
             self.assertEqual(AronsonSet.from_set(exotic_seqs),
                              AronsonSet.from_set({AronsonSequence('t', [elem], direction)
                                                   for elem in aset.get_elements() - intersect}))
+
+    def test_max(self):
+        ground_truth = [22, 24]
+        for direction, val in zip(Direction, ground_truth):
+            aset = AronsonSet('t', direction)
+            with self.assertRaises(ValueError):
+                m = aset.max
+            aset.generate_brute_force(1)
+            self.assertEqual(aset.max, val)
 
 
 if __name__ == '__main__':

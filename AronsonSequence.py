@@ -455,6 +455,13 @@ class AronsonSequence:
         """
         return len(self.elements)
 
+    def __index__(self, val):
+        """ find index of element in elements"""
+        try:
+            return self.elements.index(val)
+        except ValueError:
+            raise ValueError("Element is not in sequence")
+
     def __getitem__(self, index: int):
         """
         [] operator, returns the element at a specified position in the Aronson sequence.

@@ -89,7 +89,7 @@ class AronsonSet:
         self.cur_iter = 0  # no generating iterations yet
         self.seen_seqs = {AronsonSequence(self.letter, [], self.direction)}  # every set contains empty sequence
         self.iter_dict[self.cur_iter] = self.seen_seqs.copy()
-        self.subset_dict = defaultdict(set) # used for fast generation
+        self.subset_dict = defaultdict(set)  # used for fast generation
         # for generating from rules
         # self.correctness_cache = defaultdict(bool)
 
@@ -667,3 +667,9 @@ class AronsonSet:
             self.direction,
             self._hashable_iter_dict
         ))
+
+    @property
+    def max(self):
+        if len(self.seen_seqs) == 1:
+            raise ValueError("Set contains only the empty sequence")
+        return max(seq.get_prefix() for seq in self.iter_dict[self.cur_iter])

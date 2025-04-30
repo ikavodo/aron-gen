@@ -3,6 +3,7 @@ from num2words import num2words
 from AronsonSequence import AronsonSequence, PREFIX, SUFFIX, Refer, Direction, REPR_FORWARD, \
     REPR_BACKWARD, LEN_PREFIX, LEN_SUFFIX
 
+
 class AronsonSequenceTests(unittest.TestCase):
     """ unit test for AronsonSet"""
 
@@ -414,6 +415,15 @@ class AronsonSequenceTests(unittest.TestCase):
         # make sure display_letter() method works as expected
         self.assertNotEqual(seq.get_letter(), 't')
 
+    def test_index(self):
+        for direction, elems in zip(Direction, [[1, 4, 11], [3, 4, 11]]):
+            seq = AronsonSequence('t', [], direction)
+            with self.assertRaises(ValueError):
+                seq.__index__(1)
+            seq = AronsonSequence('t', elems, direction)
+            for i, elem in enumerate(seq):
+                self.assertEqual(seq.__index__(elem), i)
 
-if __name__ == '__main__':
-    unittest.main()
+
+        if __name__ == '__main__':
+            unittest.main()

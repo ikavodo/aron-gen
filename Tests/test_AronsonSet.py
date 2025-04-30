@@ -402,7 +402,7 @@ class AronsonSetTests(unittest.TestCase):
 
     # This is just for getting ground truths for later
     def test_brute_force_generation(self):
-        self.check_generation_method("generate_brute_force")
+        self.check_generation_method("generate_full")
 
     # def test_generate_from_rules(self):
     #     self.check_generation_method("generate_from_rules")
@@ -459,15 +459,15 @@ class AronsonSetTests(unittest.TestCase):
             aset.generate_fast(5)  # Should converge before 5 iterations
 
     def test_generation_speed(self):
-        """Verify generate_fast() is faster than generate_brute_force() for equivalent iterations"""
+        """Verify generate_fast() is faster than generate_full() for equivalent iterations"""
         iterations = 2
         speedups = []
 
         for direction in Direction:
-            # Time generate_brute_force
+            # Time generate_full
             rules_set = AronsonSet('t', direction)
             start_rules = time.perf_counter()
-            rules_set.generate_brute_force(iterations)
+            rules_set.generate_full(iterations)
             time_rules = time.perf_counter() - start_rules
 
             # Time generate_fast
@@ -503,7 +503,7 @@ class AronsonSetTests(unittest.TestCase):
     # def test_missing_sentences(self):
     #     for direction in Direction:
     #         aset_brute = AronsonSet('t', direction)
-    #         aset_brute.generate_brute_force(2)
+    #         aset_brute.generate_full(2)
     #         aset_rules = AronsonSet('t', direction)
     #         # runs for long. Finds 853 out of 955
     #         aset_rules.generate_from_rules(2)
@@ -516,7 +516,7 @@ class AronsonSetTests(unittest.TestCase):
         for direction in Direction:
             aset_brute = AronsonSet('t', direction)
             # this takes some time...
-            aset_brute.generate_brute_force(num_iters)
+            aset_brute.generate_full(num_iters)
             for prev_iter, next_iter in zip(range(num_iters), range(1, num_iters + 1)):
                 prev_missing = aset_brute.find_non_elements(prev_iter)
                 next_missing = aset_brute.find_non_elements(next_iter)
@@ -540,7 +540,7 @@ class AronsonSetTests(unittest.TestCase):
         # check same
         aset = AronsonSet('t')
         emp_set = aset.copy()
-        aset.generate_brute_force(1)
+        aset.generate_full(1)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
         intersect = (aset.__and__(aset_back, 3))
@@ -551,8 +551,8 @@ class AronsonSetTests(unittest.TestCase):
         # Test in-place intersection
         aset1 = AronsonSet('t')
         aset2 = aset1.copy()
-        aset1.generate_brute_force(1)
-        aset2.generate_brute_force(1)
+        aset1.generate_full(1)
+        aset2.generate_full(1)
 
         # Intersection with self should be identity
         aset1 &= aset2
@@ -608,7 +608,7 @@ class AronsonSetTests(unittest.TestCase):
         all_elems = [[11, 12, 15, 17, 25, 26, 27], [11, 13, 17, 20, 25, 27]]
         for elems, direction in zip(all_elems, list(Direction)):
             aset = AronsonSet('t', direction)
-            aset.generate_brute_force(2)
+            aset.generate_full(2)
             first = 1 if direction == Direction.FORWARD else 3
             valid_continuations = {AronsonSequence('t', [first, p], direction) for p in elems}
             filtered = aset.filter_elems({first})
@@ -619,7 +619,7 @@ class AronsonSetTests(unittest.TestCase):
         all_elems = [({1, 4}, {10, 12}, {19, 21, 22}), ({3, 4}, {8}, {19, 23, 24})]
         for elems, direction in zip(all_elems, list(Direction)):
             aset = AronsonSet('t', direction)
-            aset.generate_brute_force(1)
+            aset.generate_full(1)
             for elem, ref in zip(elems, list(Refer)):
                 filtered = aset.filter_refs({ref})
                 for e in elem:
@@ -627,13 +627,13 @@ class AronsonSetTests(unittest.TestCase):
 
     def test_getitem(self):
         aset = AronsonSet('t')
-        aset.generate_brute_force(1)
+        aset.generate_full(1)
         self.assertTrue(all(len(seq) == i for seq in aset[i]) for i in range(2))
 
     def test_contains(self):
         aset = AronsonSet('t')
         self.assertTrue(AronsonSequence('t') in aset)
-        aset.generate_brute_force(1)
+        aset.generate_full(1)
         singleton_elems = [1, 4, 10, 12, 19, 21, 22]
         for elem in singleton_elems:
             self.assertTrue(AronsonSequence('t', [elem]) in aset)
@@ -667,10 +667,10 @@ class AronsonSetTests(unittest.TestCase):
     #         aset = AronsonSet('t', direction)
     #         aset.generate_fast(2)
     #         aset2 = AronsonSet('t', direction)
-    #         aset2.generate_brute_force(2)
+    #         aset2.generate_full(2)
     #         self.assertNotEqual(aset, aset2)
     #         # now flip use of generators for next iteration
-    #         aset.generate_brute_force(2)
+    #         aset.generate_full(2)
     #         aset2.generate_fast(2)
     #         # not the same sets
     #         self.assertNotEqual(aset, aset2)
@@ -681,15 +681,15 @@ class AronsonSetTests(unittest.TestCase):
         for elems, direction in zip(singleton_elems, Direction):
             aset = AronsonSet('t', direction)
             self.assertEqual(aset.get_elements(), set(set()))
-            aset.generate_brute_force(1)
+            aset.generate_full(1)
             self.assertEqual(aset.get_elements(), elems)
 
     def test_get_exotic_sequences(self):
         for direction in Direction:
             aset = AronsonSet('t', direction)
-            aset.generate_brute_force(1)
+            aset.generate_full(1)
             other_aset = AronsonSet('t', aset.direction.opposite())
-            other_aset.generate_brute_force(1)
+            other_aset.generate_full(1)
             intersect = aset.get_elements() & other_aset.get_elements()
             exotic_seqs = aset.get_exotic_sequences(other_aset)
             self.assertEqual(AronsonSet.from_set(exotic_seqs),
@@ -702,7 +702,7 @@ class AronsonSetTests(unittest.TestCase):
             aset = AronsonSet('t', direction)
             with self.assertRaises(ValueError):
                 m = aset.max
-            aset.generate_brute_force(1)
+            aset.generate_full(1)
             self.assertEqual(aset.max, val)
 
 

@@ -315,7 +315,7 @@ class AronsonSet:
         return self.forward_generate(AronsonSequence(self.letter, [], self.direction))
 
     # For generating ground truths in first three iterations (infeasible afterwards)
-    def generate_brute_force(self, n_iterations: int):
+    def generate_full(self, n_iterations: int):
         if n_iterations <= 0:
             return
 
@@ -493,8 +493,8 @@ class AronsonSet:
         # don't modify inputs
         set1 = self.copy()
         set2 = other.copy()
-        set1.generate_brute_force(n)
-        set2.generate_brute_force(n)
+        set1.generate_full(n)
+        set2.generate_full(n)
         # Compute the result of the set operation
         result = set_op({tuple(seq.get_elements()) for seq in set1.get_seen_seqs()},
                         {tuple(seq.get_elements()) for seq in set2.get_seen_seqs()})

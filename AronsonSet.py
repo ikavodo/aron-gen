@@ -1,4 +1,6 @@
 from itertools import islice, combinations, permutations
+from math import log2, ceil
+
 from AronsonSequence import AronsonSequence, Direction, LEN_PREFIX, LEN_SUFFIX
 from collections import defaultdict
 from typing import Callable
@@ -319,34 +321,46 @@ class AronsonSet:
         if n_iterations <= 0:
             return
 
-        def generate_unique_lists(n, bound):
-            if n > bound:
-                raise ValueError("n can't be greater than available unique values")
-            return (list(p) for p in permutations(range(1, bound + 1), n))
-
-        def is_valid_perm(perm):
-            elem_set = set(perm)
-            if self.non_elements & elem_set:
+        def is_valid_extension(elem, current_perm):
+            if elem in self.non_elements:
                 return False
-            return not any({x, x + 1, x + 2}.issubset(elem_set) for x in elem_set)
+            if (elem - 1 in current_perm and elem - 2 in current_perm) or \
+                    (elem + 1 in current_perm and elem + 2 in current_perm):
+                return False
+            return True
+
+        def backtrack(current_perm, current_sum, remaining, max_len):
+            if len(current_perm) == max_len:
+                # Apply metric check only now
+                mean = sum(current_perm) / len(current_perm)
+                metric = max(x - mean for x in current_perm)
+                if metric <= ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key]):
+                    yield current_perm.copy()
+                return
+            for elem in sorted(remaining):
+                if is_valid_extension(elem, current_perm):
+                    current_perm.append(elem)
+                    remaining.remove(elem)
+                    yield from backtrack(current_perm, current_sum + elem, remaining, max_len)
+                    remaining.add(current_perm.pop())
 
         cur_ord_key = 2
         while self.cur_iter < n_iterations:
             self.cur_iter += 1
-            upper_bound = self.cur_iter * ORD_TABLE[cur_ord_key] + 2 * max(LEN_PREFIX, LEN_SUFFIX)
 
-            if self.cur_iter == 1:
-                upper_bound *= 2
-
+            upper_bound = self.cur_iter * ORD_TABLE[cur_ord_key] + 2 * LEN_PREFIX
             if upper_bound >= 10 ** (cur_ord_key + 1):
                 cur_ord_key += 1
 
-            perms = (
-                perm for perm in generate_unique_lists(self.cur_iter, upper_bound)
-                if is_valid_perm(perm)
-            )
-            seqs = (AronsonSequence(self.letter, perm, self.direction) for perm in perms)
-            cur_seqs = {s for s in seqs if self.is_correct(s)}
+            allowed_elements = [x for x in range(1, upper_bound) if x not in self.non_elements]
+            initial_remaining = set(allowed_elements)
+
+            cur_seqs = set()
+            for perm in backtrack([], 0, initial_remaining, self.cur_iter):
+                seq = AronsonSequence(self.letter, perm, self.direction)
+                if self.is_correct(seq):
+                    cur_seqs.add(seq)
+
             self._update_iter(cur_seqs)
 
     def generate_fast(self, n_iterations: int):
@@ -389,7 +403,7 @@ class AronsonSet:
             raise GenError("converged")
         self._update_iter(filtered)
 
-    def filter_elems(self, elems):
+    def filter_elements(self, elems):
         """
         return all seen sequences including elements in elems
         :param elems: for sequences
@@ -398,7 +412,7 @@ class AronsonSet:
         """
         if not isinstance(elems, set):
             raise ValueError("input argument must be a set")
-        return {seq for seq in self.seen_seqs if all(elem in seq for elem in elems)}
+        return AronsonSet.from_set({seq for seq in self.seen_seqs if all(elem in seq for elem in elems)})
 
     def find_non_elements(self, n_iter):
         # idea: look at all generated sequences, look for elements which appear in non.
@@ -424,10 +438,10 @@ class AronsonSet:
         """
         if not isinstance(refs, set):
             raise ValueError("input argument must be a set")
-        return {
+        return AronsonSet.from_set({
             seq for seq in self.seen_seqs
             if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})
-        }
+        })
 
     # Utility methods
     def copy(self):

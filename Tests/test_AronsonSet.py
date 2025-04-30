@@ -505,7 +505,6 @@ class AronsonSetTests(unittest.TestCase):
     #         aset_brute = AronsonSet('t', direction)
     #         aset_brute.generate_full(2)
     #         aset_rules = AronsonSet('t', direction)
-    #         # runs for long. Finds 853 out of 955
     #         aset_rules.generate_from_rules(2)
     #         self.assertTrue(all(aset_rules.is_correct(s) for s in aset_rules.get_seen_seqs()))
     #         missing = aset_brute - aset_rules
@@ -523,18 +522,19 @@ class AronsonSetTests(unittest.TestCase):
                 if prev_missing:
                     self.assertTrue(prev_missing & next_missing)
 
-    # def test_generate_from_rules_harder(self):
-    #     # This is too hard.
-    #     seqs_per_iter = [[1, 8, 73, 955], [1, 7, 67, 771]]
-    #     # seqs_per_iter = [[1, 8, 73], [1, 7, 67]]
-    #
-    #     for direction, n_seqs in zip(list(Direction), seqs_per_iter):
-    #         for i, n in enumerate(n_seqs):
-    #             aset = AronsonSet('t', direction)
-    #             aset.generate_from_rules(i)
-    #             self.assertTrue(all(aset.is_correct(s) for s in aset.get_seen_seqs()))
-    #             # doesn't work for 3!
-    #             # self.assertEqual(len(aset), n)
+    def test_generate_full_harder(self):
+        # This is too hard.
+        # seqs_per_iter = [[1, 8, 73, 955, 16205], [1, 7, 67, 771, 13113]]
+        seqs_per_iter = [[1, 8, 73, 955], [1, 7, 67, 771]]
+        # seqs_per_iter = [[1, 8, 73], [1, 7, 67]]
+
+        for direction, n_seqs in zip(list(Direction), seqs_per_iter):
+            for i, n in enumerate(n_seqs):
+                aset = AronsonSet('t', direction)
+                aset.generate_full(i)
+                self.assertTrue(all(aset.is_correct(s) for s in aset.get_seen_seqs()))
+                # doesn't work for 3!
+                self.assertEqual(len(aset), n)
 
     def test_and(self):
         # check same
@@ -543,7 +543,7 @@ class AronsonSetTests(unittest.TestCase):
         aset.generate_full(1)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
-        intersect = (aset.__and__(aset_back, 3))
+        intersect = (aset.__and__(aset_back, 2))
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
             self.assertIn(seq, intersect.get_seen_seqs())
 
@@ -604,14 +604,15 @@ class AronsonSetTests(unittest.TestCase):
         aset -= subset
         self.assertEqual(aset, AronsonSet.from_sequence(seq2))
 
-    def test_filter_elems(self):
+    def test_filter_elements(self):
         all_elems = [[11, 12, 15, 17, 25, 26, 27], [11, 13, 17, 20, 25, 27]]
         for elems, direction in zip(all_elems, list(Direction)):
             aset = AronsonSet('t', direction)
             aset.generate_full(2)
             first = 1 if direction == Direction.FORWARD else 3
             valid_continuations = {AronsonSequence('t', [first, p], direction) for p in elems}
-            filtered = aset.filter_elems({first})
+            filtered = aset.filter_elements({first})
+            self.assertTrue(len(filtered) >= 2)
             for continuation in valid_continuations:
                 self.assertIn(continuation, filtered)
 
@@ -622,6 +623,7 @@ class AronsonSetTests(unittest.TestCase):
             aset.generate_full(1)
             for elem, ref in zip(elems, list(Refer)):
                 filtered = aset.filter_refs({ref})
+                self.assertTrue(len(filtered) >= 2)
                 for e in elem:
                     self.assertIn(AronsonSequence('t', [e], direction), filtered)
 

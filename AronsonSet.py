@@ -1,4 +1,4 @@
-from itertools import islice, combinations, permutations
+from itertools import islice, combinations
 from math import log2, ceil
 
 from AronsonSequence import AronsonSequence, Direction, LEN_PREFIX, LEN_SUFFIX
@@ -92,8 +92,6 @@ class AronsonSet:
         self.seen_seqs = {AronsonSequence(self.letter, [], self.direction)}  # every set contains empty sequence
         self.iter_dict[self.cur_iter] = self.seen_seqs.copy()
         self.subset_dict = defaultdict(set)  # used for fast generation
-        # for generating from rules
-        # self.correctness_cache = defaultdict(bool)
 
     @property
     def display_letter(self):

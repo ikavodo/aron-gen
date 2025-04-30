@@ -404,9 +404,6 @@ class AronsonSetTests(unittest.TestCase):
     def test_brute_force_generation(self):
         self.check_generation_method("generate_full")
 
-    # def test_generate_from_rules(self):
-    #     self.check_generation_method("generate_from_rules")
-
     def test_generate_fast(self):
         # Test singleton generation in first iteration
         valid_singletons = {
@@ -498,17 +495,6 @@ class AronsonSetTests(unittest.TestCase):
         diff = aset_singletons - aset_empty
         # should include the empty set!
         self.assertEqual(diff, aset_singletons)
-
-    # Not passing this test for 3 iterations
-    # def test_missing_sentences(self):
-    #     for direction in Direction:
-    #         aset_brute = AronsonSet('t', direction)
-    #         aset_brute.generate_full(2)
-    #         aset_rules = AronsonSet('t', direction)
-    #         aset_rules.generate_from_rules(2)
-    #         self.assertTrue(all(aset_rules.is_correct(s) for s in aset_rules.get_seen_seqs()))
-    #         missing = aset_brute - aset_rules
-    #         self.assertEqual(missing, AronsonSet('t', direction))
 
     def test_non_elements(self):
         num_iters = 2
@@ -661,19 +647,6 @@ class AronsonSetTests(unittest.TestCase):
         # set is hashable
         s.add(aset)
         self.assertIn(aset, s)
-
-    # def test_continue_generation(self):
-    #     for direction in Direction:
-    #         aset = AronsonSet('t', direction)
-    #         aset.generate_fast(2)
-    #         aset2 = AronsonSet('t', direction)
-    #         aset2.generate_full(2)
-    #         self.assertNotEqual(aset, aset2)
-    #         # now flip use of generators for next iteration
-    #         aset.generate_full(2)
-    #         aset2.generate_fast(2)
-    #         # not the same sets
-    #         self.assertNotEqual(aset, aset2)
 
     def test_get_elements(self):
 

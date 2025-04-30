@@ -1,6 +1,6 @@
 # Aronson Sequence Generator
 
-A Python implementation of self-referential sentences inspired by the ["Aronson sequence"](https://oeis.org/A005224), featuring combinatorial generation and validation of linguistic puzzles. Built around two core classes: `AronsonSequence` (individual sequences) and `AronsonSet` (collections of sequences).
+A Python implementation of self-referential sentences inspired by the ["Aronson sequence"](https://oeis.org/A005224), featuring combinatorial generation and validation of semantically-correct instances. Built around two core classes: `AronsonSequence` (individual sequences) and `AronsonSet` (collections of sequences).
 
 See [this](https://ikavodo.github.io/aronson-1/) for more details.
 

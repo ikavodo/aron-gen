@@ -9,6 +9,7 @@ from contextlib import suppress
 
 # global: dictionary with maximum ordinal lengths per number of bits in decimal representation
 ORD_TABLE = {i + 1: j for i, j in enumerate([7, 14, 26, 39, 45, 56, 69, 75, 87, 99])}
+ORD_INITIAL = 2
 
 
 # Exception classes
@@ -50,25 +51,6 @@ class GenError(Exception):
 
 
 # This class generates correct Aronson sequences via various generation rules.
-def _subset_to_index_pairs(seq_length):
-    """ Map each index pair (i, j) to all non-empty subsets of indices strictly in between.
-        If i and j are adjacent, also include each individually as possible subsets.
-    """
-    index_pair_subsets = defaultdict(list)
-    for i in range(seq_length):
-        for j in range(i + 1, seq_length):
-            mid = list(range(i + 1, j))  # indices strictly in between
-            if not mid:
-                # i and j are adjacent → allow deleting i or j individually
-                index_pair_subsets[(i, j)].append((i,))
-                index_pair_subsets[(i, j)].append((j,))
-            else:
-                for r in range(1, len(mid) + 1):
-                    for sub in combinations(mid, r):
-                        index_pair_subsets[(i, j)].append(sub)
-    return index_pair_subsets
-
-
 class AronsonSet:
     """
     Class for generating correct AronsonSequence objects.
@@ -252,6 +234,25 @@ class AronsonSet:
                 new_sets.add(AronsonSequence(self.letter, swapped, self.direction))
         return new_sets
 
+    @staticmethod
+    def _subset_to_index_pairs(seq_length):
+        """ Map each index pair (i, j) to all non-empty subsets of indices strictly in between.
+            If i and j are adjacent, also include each individually as possible subsets.
+        """
+        index_pair_subsets = defaultdict(list)
+        for i in range(seq_length):
+            for j in range(i + 1, seq_length):
+                mid = list(range(i + 1, j))  # indices strictly in between
+                if not mid:
+                    # i and j are adjacent → allow deleting i or j individually
+                    index_pair_subsets[(i, j)].append((i,))
+                    index_pair_subsets[(i, j)].append((j,))
+                else:
+                    for r in range(1, len(mid) + 1):
+                        for sub in combinations(mid, r):
+                            index_pair_subsets[(i, j)].append(sub)
+        return index_pair_subsets
+
     def subset(self, seq: AronsonSequence = None):
         """
         Can take subset if other elements aren't affected. This only works for backward-referring sequences.
@@ -263,7 +264,7 @@ class AronsonSet:
         new_sets = set()
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
         if len(seq) > self.cur_iter:
-            self.subset_dict = _subset_to_index_pairs(len(seq))
+            self.subset_dict = self._subset_to_index_pairs(len(seq))
         # Idea is to pick arbitrary pairs and delete every subset in between
         for i, j in combinations(range(len(seq)), 2):
             for sub in self.subset_dict[(i, j)]:
@@ -290,6 +291,7 @@ class AronsonSet:
         lower_bound = 1 if seq.is_empty() else sentence_len - (
             LEN_SUFFIX if seq.direction == Direction.FORWARD else LEN_PREFIX) - 1
         new_seqs = set()
+        # num bits in length
         ord_key = len(str(sentence_len))
         if seq.is_empty():
             upper_bound = ORD_TABLE[ord_key] + sentence_len
@@ -340,10 +342,9 @@ class AronsonSet:
                     yield from backtrack(current_perm, current_sum + elem, remaining, max_len)
                     remaining.add(current_perm.pop())
 
-        cur_ord_key = 2
         while self.cur_iter < n_iterations:
             self.cur_iter += 1
-
+            cur_ord_key = ORD_INITIAL
             upper_bound = self.cur_iter * ORD_TABLE[cur_ord_key] + 2 * LEN_PREFIX
             if upper_bound >= 10 ** (cur_ord_key + 1):
                 cur_ord_key += 1
@@ -371,7 +372,7 @@ class AronsonSet:
             prev_seqs = self.iter_dict[self.cur_iter]
             self.cur_iter += 1
             # update subset_dict
-            self.subset_dict = _subset_to_index_pairs(self.cur_iter)
+            self.subset_dict = self._subset_to_index_pairs(self.cur_iter)
             cur_seqs = self.generate_singletons() if self.cur_iter == 1 else set().union(
                 *(self.swap(seq) | self.subset(seq) for seq in prev_seqs))
             for seq in (s for s in prev_seqs if not s.has_forward_ref()):
@@ -452,7 +453,7 @@ class AronsonSet:
     # Setters
     def set_subset_dict(self, seq: AronsonSequence):
         """ Helper"""
-        self.subset_dict = _subset_to_index_pairs(len(seq))
+        self.subset_dict = self._subset_to_index_pairs(len(seq))
 
     def set_iter_dict(self, new_dict):
         # Set always includes empty AronsonSequence

@@ -677,6 +677,13 @@ class AronsonSetTests(unittest.TestCase):
             aset.generate_full(1)
             self.assertEqual(aset.max, val)
 
+    def test_metric(self):
+        for direction in Direction:
+            aset = AronsonSet('t', direction)
+            aset.generate_full(4)
+            aset.generate_fast(5)
+            metric = max(x - 1/len(seq) * sum(seq) for seq in aset[5]  for x in seq)
+            self.assertTrue(metric >= ORD_TABLE[2])
 
 if __name__ == '__main__':
     unittest.main()

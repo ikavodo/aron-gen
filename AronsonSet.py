@@ -37,9 +37,8 @@ class ErrorMode(Enum):
     """
     Enum for modes
 
-    BACKWARD: Refers to a previous position.
-    SELF: Refers to its own position.
-    FORWARD: Refers to a later position.
+    ITER_MODE: GenError used for raising error regarding generation per iteration
+    ELEM_MODE: GenError used for raising error regarding continuation of a single sequence
     """
     ITER_MODE = 1
     ELEM_MODE = 2
@@ -353,7 +352,7 @@ class AronsonSet:
             :return: None
             """
             if len(current_perm) == max_len:
-                mean = sum(current_perm) / len(current_perm)
+                mean = current_sum / max_len
                 metric = max(x - mean for x in current_perm)
                 upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key])
                 # if max_len >= 4 and error_rate <= 1e-3:
@@ -468,7 +467,6 @@ class AronsonSet:
                 sym_set.update(seq_perm)
         return AronsonSet.from_set(sym_set)
 
-    # Buggy?
     def find_non_elements(self, n_iter=None):
         """
         Find all elements up to maximum element in set which do not appear in any sequence
@@ -618,7 +616,7 @@ class AronsonSet:
 
     def discard(self, seq: AronsonSequence):
         """
-        discard a sequence from a set. Discarding a set of sequences can be accomplished via
+        Wrapper for discarding a sequence from a set.
         :param seq: to be discarded
         :return: None
         """
@@ -631,11 +629,15 @@ class AronsonSet:
             raise ValueError("Set contains only the empty sequence")
         return max(seq.get_prefix() for seq in self.iter_dict[self.cur_iter])
 
-    def get_len_dict(self):
+    def get_len_dict(self, generated_full=True):
         """
         get dictionary mapping lengths of sequences to number of sequences in set.
         :return:
         """
+        if generated_full:
+            # iteration dictionary partitioned by sequence length
+            return {key: len(val) for key, val in self.iter_dict.items()}
+        # compute a new dictionary
         return Counter(len(seq) for seq in self.seen_seqs)
 
     # operator overloading
@@ -722,27 +724,25 @@ class AronsonSet:
 
     def __iter__(self):
         """
-        for operator, returns an iterator over the seen sequences.
+        for loop operator, returns an iterator over the seen sequences.
         :return: An iterator for the sequences.
         """
         return iter(self.seen_seqs)
 
     def __len__(self):
         """
-        len() operator, returns the number of seen AronsonSequence instances
+        len() operator
         :return: The length of the Aronson sequence.
         """
         return len(self.seen_seqs)
 
     def __contains__(self, item):
-        """in operator, returns True or False if a sequence is in set of seen sequences"""
+        """ in operator, returns True or False"""
         return item in self.seen_seqs
 
     @property
     def _hashable_iter_dict(self):
-        """
-        Returns a frozenset representation of iter_dict for hashing,
-        """
+        """ Returns a frozenset representation of iter_dict for hashing"""
         return frozenset(
             (i, frozenset(seq_set)) for i, seq_set in self.iter_dict.items()
         )

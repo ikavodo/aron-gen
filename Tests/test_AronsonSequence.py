@@ -424,5 +424,19 @@ class AronsonSequenceTests(unittest.TestCase):
             for i, elem in enumerate(seq):
                 self.assertEqual(seq.__index__(elem), i)
 
-        if __name__ == '__main__':
-            unittest.main()
+    def test_is_permutation(self):
+        elems = [1, 2]
+        for direction in Direction:
+            seq1 = AronsonSequence('t', [], direction)
+            seq2 = AronsonSequence('t', [], direction.flip)
+            with self.assertRaises(ValueError):
+                # not allowed to compare sequences of conflicting direction
+                AronsonSequence.is_permutation(seq1, seq2)
+            seq1, seq2 = tuple(AronsonSequence('t', elems[::(1 if i else -1)], direction) for i in range(2))
+            self.assertTrue(AronsonSequence.is_permutation(seq1, seq2))
+            seq1.append_elements([3])
+            # no longer permutation, but rather permuted subset
+            self.assertFalse(AronsonSequence.is_permutation(seq1, seq2))
+
+    if __name__ == '__main__':
+        unittest.main()

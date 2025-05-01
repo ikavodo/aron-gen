@@ -4,7 +4,7 @@ import time
 from functools import reduce
 from itertools import combinations
 from num2words import num2words
-from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE, ORD_INITIAL
+from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE
 from AronsonSequence import AronsonSequence, Direction, Refer
 
 
@@ -45,7 +45,7 @@ class AronsonSetTests(unittest.TestCase):
                 aset = AronsonSet('t', direction)
                 self.assertEqual(aset.display_letter, 'T')
                 self.assertEqual(aset.direction, direction)
-                self.assertEqual(len(aset.get_seen_seqs()), 1)  # Empty sequence
+                self.assertEqual(len(aset), 1)  # Empty sequence
                 self.assertEqual(aset.get_n_iterations(), 0)
 
         # Invalid letters
@@ -58,9 +58,9 @@ class AronsonSetTests(unittest.TestCase):
         # Construction from empty sequence should result in same thing as constructing a new AronsonSet instance
         valid_seq = AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
         aset = AronsonSet.from_sequence(valid_seq)
-        self.assertIn(valid_seq, aset.get_seen_seqs())
+        self.assertIn(valid_seq, aset)
         empty_seq = AronsonSequence('t', [], Direction.BACKWARD)
-        self.assertIn(empty_seq, aset.get_seen_seqs())
+        self.assertIn(empty_seq, aset)
 
         # Invalid sequence
         invalid_seq = AronsonSequence('t', [1, 2, 3])
@@ -96,7 +96,7 @@ class AronsonSetTests(unittest.TestCase):
         empty_set = AronsonSet('t')
         empty_seq = AronsonSequence('t')
         # only sequence in set
-        self.assertEqual(empty_seq, empty_set.get_seen_seqs().pop())
+        self.assertTrue(empty_seq in empty_set and len(empty_set) == 1)
         valid_set = AronsonSet.from_sequence(AronsonSequence('t', [3, 4, 11], Direction.BACKWARD))
         # Iterating through set also gives non-empty sequence
         self.assertTrue(any(seq != empty_seq for seq in valid_set))
@@ -118,7 +118,7 @@ class AronsonSetTests(unittest.TestCase):
         # check that all sequences mapped to zero-eth interation
         same_iter = union_set2.get_iter_dict()[union_set2.get_n_iterations()]
         self.assertTrue(
-            seq in same_iter for seq in union_set2.get_seen_seqs())
+            seq in same_iter for seq in union_set2)
         self.assertNotEqual(union_set1, union_set2)
 
     def test_from_set(self):
@@ -141,7 +141,7 @@ class AronsonSetTests(unittest.TestCase):
         new_aset = AronsonSet.from_set(sets)
         for s in sets:
             # contains all sequences used for construction
-            self.assertIn(s, new_aset.get_seen_seqs())
+            self.assertIn(s, new_aset)
 
     def test_is_correct(self):
         test_cases = [
@@ -226,7 +226,7 @@ class AronsonSetTests(unittest.TestCase):
 
         def get_new_seqs(aset: AronsonSet):
             """ helper for getting rid of empty set in backward_search()"""
-            new_seqs = [aset.backward_search(seq) for seq in aset.get_seen_seqs()]
+            new_seqs = [aset.backward_search(seq) for seq in aset]
             return reduce(lambda a, b: a.union(b), new_seqs)
 
         aset_emp = AronsonSet('t')
@@ -254,7 +254,7 @@ class AronsonSetTests(unittest.TestCase):
         # prefix complete
         for elems, direction in zip([[1], [3]], list(Direction)):
             new_aset = AronsonSet.from_sequence(AronsonSequence('t', elems, direction))
-            self.assertTrue(all(seq.is_prefix_complete()) for seq in new_aset.get_seen_seqs())
+            self.assertTrue(all(seq.is_prefix_complete()) for seq in new_aset)
             new_seqs = get_new_seqs(new_aset)
             # Returns nothing
             self.assertEqual(new_seqs, set())
@@ -266,17 +266,18 @@ class AronsonSetTests(unittest.TestCase):
             aset = AronsonSet('t', direction)
             for n in range(len(elems)):
                 # singleton
-                singleton_set = aset.generate_aronson(n)
+                singleton_set = AronsonSet.from_set(aset.generate_aronson(n))
                 expected = AronsonSequence('t', elems[:n], direction)
                 self.assertIn(expected, singleton_set)
-                seq = singleton_set.pop()
+                # true for either empty or non-empty set
+                seq = singleton_set.peek()
                 self.assertTrue(seq.is_prefix_complete())
 
         # Letter doesn't allow generating more.
         for direction in Direction:
             aset = AronsonSet('a', direction)
             with self.assertRaises(GenError):
-                aset.generate_aronson(2)
+                AronsonSet.from_set(aset.generate_aronson(2))
 
     def test_backward_generate(self):
 
@@ -284,16 +285,17 @@ class AronsonSetTests(unittest.TestCase):
             # can fail for either forward-referring or self-referring, catch exception
             aset = AronsonSet.from_sequence(AronsonSequence('t', seq, direction))
             with self.assertRaises(GenError):
-                [aset.backward_generate(1, seq) for seq in aset.get_seen_seqs()]
+                [aset.backward_generate(1, seq) for seq in aset]
 
+        target = 24
         # try generating more than 1 new element
         for elems in [[1, 11], [10, 12]]:
             seq = AronsonSequence('t', elems)
             aset = AronsonSet.from_sequence(seq)
-            new_seqs = [aset.backward_generate(2, seq) for seq in aset.get_seen_seqs() if not seq.is_empty()]
+            new_seqs = [aset.backward_generate(2, seq) for seq in aset if not seq.is_empty()]
             new_seq = reduce(lambda a, b: a.union(b), new_seqs).pop()
             # last element of the two series is the same
-            self.assertEqual(new_seq[-1], 24)
+            self.assertEqual(new_seq[-1], target)
 
     def test_flip_direction(self):
         """ only works for empty sets"""
@@ -301,7 +303,7 @@ class AronsonSetTests(unittest.TestCase):
         empty_set.flip_direction()
         self.assertEqual(empty_set.get_direction(), Direction.BACKWARD)
         # check seen sequence direction is also changed
-        seq = empty_set.get_seen_seqs().copy().pop()
+        seq = empty_set.peek()
         self.assertEqual(seq.get_direction(), Direction.BACKWARD)
         aset = AronsonSet.from_sequence(AronsonSequence('t', [1]))
         # can't flip anymore
@@ -309,44 +311,44 @@ class AronsonSetTests(unittest.TestCase):
             aset.flip_direction()
 
     def test_swap_operation(self):
-        empty_set = AronsonSet('t')
-        for s in [empty_set.get_seen_seqs(), empty_set.generate_aronson(1)]:
-            seq = s.pop()
-            # swapping empty or singleton sequences does nothing
-            self.assertEqual(empty_set.swap(seq), set())
+        aset = AronsonSet.from_set(AronsonSet('t').generate_aronson(1))
+        seq = aset.peek()
+        # swapping empty or singleton sequences does nothing
+        self.assertEqual(aset.swap(seq), set())
 
         all_seqs = [([1, 11, 4], [4, 1, 11], [4, 11, 1]), ([3, 11, 4], [4, 3, 11], [4, 11, 3])]
         for seqs, direction in zip(all_seqs, list(Direction)):
             swapped1, swapped2, out = seqs
-            empty_set = AronsonSet('t', direction)
-            seq = empty_set.generate_aronson(3).pop()
-            swapped_seqs = empty_set.swap(seq)
-            self.assertIn(AronsonSequence('t', swapped1, direction), swapped_seqs)
-            # do another swap
-            second_gen_swap = empty_set.swap(AronsonSequence('t', swapped2, direction))
-            self.assertIn(AronsonSequence('t', out, direction), second_gen_swap)
+            aset = AronsonSet.from_set(AronsonSet('t', direction).generate_aronson(3))
+            seq = aset.peek()
+            swapped_seqs = aset.swap(seq)
+            if not seq.is_empty():
+                self.assertIn(AronsonSequence('t', swapped1, direction), swapped_seqs)
+                # do another swap
+                second_gen_swap = aset.swap(AronsonSequence('t', swapped2, direction))
+                self.assertIn(AronsonSequence('t', out, direction), second_gen_swap)
 
         # Case in which pair can't be swapped
-        empty_set.flip_direction()
         seq = AronsonSequence('t', [10, 12])
         # is empty
-        swapped_seqs = empty_set.swap(seq)
+        swapped_seqs = AronsonSet('t').swap(seq)
         self.assertEqual(swapped_seqs, set())
 
     # Throws error because of change to dictionary
     def test_subset_operation(self):
         # Test finds all subsets
         empty_set = AronsonSet('t')
-        empty_seq = empty_set.get_seen_seqs().pop()
+        empty_seq = empty_set.peek()
         # taking subset of empty sequence elements does nothing
         self.assertEqual(empty_set.subset(empty_seq), set())
 
         for direction in Direction:
-            empty_set = AronsonSet('t', direction)
-            seq = empty_set.generate_aronson(3).pop()
+            aset = AronsonSet.from_set(AronsonSet('t', direction).generate_aronson(3))
+            seq = aset.peek()
             # prepare for
-            subbed_seqs = empty_set.subset(seq)
-            self.assertIn(AronsonSequence('t', seq[::2], direction), subbed_seqs)
+            subbed_seqs = aset.subset(seq)
+            if not seq.is_empty():
+                self.assertIn(AronsonSequence('t', seq[::2], direction), subbed_seqs)
 
         elems = [1, 4]
         seq = AronsonSequence('t', elems)
@@ -367,15 +369,17 @@ class AronsonSetTests(unittest.TestCase):
 
     def test_forward_generation(self):
         # Test finding next valid element
-        all_elems = [[11, 12, 15, 17, 25, 26, 27], [11, 13, 17, 20, 25, 27]]
+        all_elems = [[26, 28, 20, 11, 16, 13], [14, 23, 26, 18, 24, 29]]
+        first = 4
         for elems, direction in zip(all_elems, list(Direction)):
-            aset = AronsonSet('t', direction)
-            seq = aset.generate_aronson(1).pop()
+            aset = AronsonSet.from_sequence(AronsonSequence('t', [first], direction))
+            seq = aset.peek()
             continuations = aset.forward_generate(seq)
             # valid forward continuations
-            first = 1 if direction == Direction.FORWARD else 3
-            valid_continuations = {AronsonSequence('t', [first, p], direction) for p in elems}
-            self.assertTrue(valid_continuations.issubset(continuations))
+            valid_continuations = {AronsonSequence('t', [first, p], direction) for p in
+                                   elems}
+            if not seq.is_empty():
+                self.assertTrue(valid_continuations.issubset(continuations))
 
     def check_generation_method(self, method_name):
         all_elems = [([1, 4, 10, 12, 19, 21, 22], [11, 12, 15, 17, 25, 26, 27]),
@@ -499,14 +503,17 @@ class AronsonSetTests(unittest.TestCase):
     def test_non_elements(self):
         num_iters = 2
         for direction in Direction:
-            aset_brute = AronsonSet('t', direction)
-            # this takes some time...
-            aset_brute.generate_full(num_iters)
-            for prev_iter, next_iter in zip(range(num_iters), range(1, num_iters + 1)):
-                prev_missing = aset_brute.find_non_elements(prev_iter)
-                next_missing = aset_brute.find_non_elements(next_iter)
-                if prev_missing:
-                    self.assertTrue(prev_missing & next_missing)
+            non_elements = {2, 3, 5, 6, 8, 9} if direction == Direction.FORWARD else {1, 2, 5, 6, 9, 10}
+            aset = AronsonSet('t', direction)
+            # these two are the same
+            self.assertEqual(aset.find_non_elements(), aset.find_non_elements(aset.get_n_iterations()))
+            self.assertEqual(aset.find_non_elements(), set())
+            # true in both directions
+            aset2 = AronsonSet.from_sequence(AronsonSequence('t', [4], direction))
+            self.assertTrue(any(elem in non_elements for elem in aset2.find_non_elements()))
+
+            aset.generate_full(num_iters)
+            self.assertTrue(non_elements.issubset(aset.find_non_elements()))
 
     def test_generate_full_harder(self):
         seqs_per_iter = [[1, 8, 73, 955, 16205], [1, 7, 67, 771, 13113]]
@@ -656,24 +663,24 @@ class AronsonSetTests(unittest.TestCase):
             aset.generate_full(1)
             self.assertEqual(aset.get_elements(), elems)
 
-    def test_get_exotic_sequences(self):
+    def test_unique_element_sequences(self):
         for direction in Direction:
             aset = AronsonSet('t', direction)
             aset.generate_full(1)
-            other_aset = AronsonSet('t', aset.direction.opposite())
+            other_aset = AronsonSet('t', direction.flip)
             other_aset.generate_full(1)
+            unique_elems = aset.get_unique_element_sequences(other_aset)
             intersect = aset.get_elements() & other_aset.get_elements()
-            exotic_seqs = aset.get_exotic_sequences(other_aset)
-            self.assertEqual(AronsonSet.from_set(exotic_seqs),
-                             AronsonSet.from_set({AronsonSequence('t', [elem], direction)
-                                                  for elem in aset.get_elements() - intersect}))
+            # equivalent to getting elements and subtracting intersect
+            diff_elems = {AronsonSequence('t', [elem], direction) for elem in aset.get_elements() - intersect}
+            self.assertEqual(AronsonSet.from_set(unique_elems), AronsonSet.from_set(diff_elems))
 
     def test_max(self):
         ground_truth = [22, 24]
         for direction, val in zip(Direction, ground_truth):
             aset = AronsonSet('t', direction)
             with self.assertRaises(ValueError):
-                m = aset.max
+                print(aset.max)
             aset.generate_full(1)
             self.assertEqual(aset.max, val)
 
@@ -699,6 +706,49 @@ class AronsonSetTests(unittest.TestCase):
                     # check set difference is not empty
                     self.assertNotEqual(new_aset, AronsonSet('t', direction))
                     self.assertNotEqual(new_aset, aset[i])
+
+    def test_discard(self):
+        # these work for either direction
+        singletons = [4, 19]
+        for i, direction in enumerate(Direction):
+            empty_set = AronsonSet('t', direction)
+            empty_cpy = empty_set.copy()
+            empty_set.discard(AronsonSequence('t', [], direction))
+            # discarding empty set does nothing
+            self.assertEqual(empty_set, empty_cpy)
+
+            aseq = AronsonSequence('t', [singletons[i]], direction)
+            aset = AronsonSet.from_sequence(aseq)
+            aset_cpy = aset.copy()
+            aset.discard(aseq)
+            self.assertEqual(aset, AronsonSet('t', direction))
+            aset |= aset_cpy
+
+            aset.discard(AronsonSequence('t', [singletons[1 - i]], direction.flip))
+            self.assertEqual(aset, aset_cpy)
+            # check that removing elements iteratively is equivalent to difference
+            set_seqs = {AronsonSequence('t', [e], direction) for e in singletons}
+            aset = AronsonSet.from_set(set_seqs)
+            aset_cpy = aset.copy()
+            for seq in set_seqs:
+                aset_cpy.discard(seq)
+            # same as taking difference with constructor
+            self.assertEqual(aset_cpy, aset - aset)
+
+    def test_peek(self):
+        singletons = [4, 19]
+        for direction in Direction:
+            aset = AronsonSet('t', direction)
+            empty_seq = AronsonSequence('t', [], direction)
+            self.assertTrue(aset.peek() == AronsonSequence('t', [], direction))
+            # peeking didn't delete it from set
+            self.assertTrue(empty_seq in aset)
+            aset = AronsonSet.from_set({AronsonSequence('t', [e], direction) for e in singletons})
+            aseq = aset.peek()
+            aset.discard(aseq)
+            if not aseq.is_empty():
+                # discarded non-empty set, should be removed
+                self.assertNotEqual(aset.peek(), aseq)
 
 
 if __name__ == '__main__':

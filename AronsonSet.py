@@ -1,3 +1,4 @@
+from enum import Enum
 from itertools import islice, combinations, permutations
 from math import log2, ceil
 
@@ -9,6 +10,7 @@ from contextlib import suppress
 
 # global: dictionary with maximum ordinal lengths per number of bits in decimal representation
 ORD_TABLE = {i + 1: j for i, j in enumerate([7, 14, 26, 39, 45, 56, 69, 75, 87, 99])}
+# initial key for maximum ordinal length
 ORD_INITIAL = 2
 
 
@@ -17,8 +19,7 @@ ORD_INITIAL = 2
 
 class VerificationError(Exception):
     """
-    Custom exception raised when the Aronson sequence verification fails.
-
+    Custom exception raised when AronsonSequence verification (is_correct()) fails.
     :param message: The error message to be shown.
     :param input_seq: The input data that caused the failure.
     """
@@ -29,50 +30,62 @@ class VerificationError(Exception):
         super().__init__(self.message)
 
     def __str__(self):
-        # will this show representation of input_seq?
         return f"{self.message}: {self.input_seq}"
+
+class ErrorMode(Enum):
+    """
+    Enum for modes
+
+    BACKWARD: Refers to a previous position.
+    SELF: Refers to its own position.
+    FORWARD: Refers to a later position.
+    """
+    ITER_MODE = 1
+    ELEM_MODE = 2
 
 
 class GenError(Exception):
     """
         Custom exception raised when generating from the input sequence is impossible.
-
         :param message: The error message to be shown.
-        :param n: expected length of sequence
+        :param n_iters: Num of iterations
         """
 
-    def __init__(self, message="Generating failed", n=None):
-        self.message = message
+
+    def __init__(self, n, message="Generating failed", error_mode=ErrorMode.ITER_MODE):
         self.n = n
+        self.message = message
+        self.error_mode = error_mode
         super().__init__(self.message)
 
     def __str__(self):
-        return f"{self.message}" if self.n is None else f"{self.message}: could not generate {self.n} elements"
+        if self.error_mode == ErrorMode.ITER_MODE:
+            return f"{self.message}: converged after {self.n} iterations"
+        else:
+            return f"{self.message}: stopped after {self.n} elements"
 
 
-# This class generates correct Aronson sequences via various generation rules.
+
+# This class generates correct Aronson sequences up to a given number of elements
 class AronsonSet:
     """
-    Class for generating correct AronsonSequence objects.
-    Notice we have for any instance S this class S ∈ Aₓ(→/←), where x is some letter and arrow refers to
-    direction (see https://ikavodo.github.io/aronson-1/)
+    Class for generating correct AronsonSequence objects of a given letter and direction,
+    see https://ikavodo.github.io/aronson-1/
     :param letter: The letter used for generating sequences.
     :param direction: sequences generation direction.
     """
 
-    # allow to generate from a sequence?
     def __init__(self, letter: str, direction: Direction = Direction.FORWARD):
-        # do some tests on letter and direction
         AronsonSequence.check_letter(letter)
         AronsonSequence.check_direction(direction)
-        # used for pruning brute-force search space
+        # Prune generation search space, integers appear in no correct sequence in given direction
         self.non_elements = {2, 3, 5, 6, 8, 9} if direction == Direction.FORWARD else {1, 2, 5, 6, 9, 10}
         self.letter = letter.lower()  # Letter used for generating sequences
         self.direction = direction  # Sequence direction
         self.iter_dict = defaultdict(set)  # init empty dictionary
         self.cur_iter = 0  # no generating iterations yet
-        self.seen_seqs = {AronsonSequence(self.letter, [], self.direction)}  # every set contains empty sequence
-        self.iter_dict[self.cur_iter] = self.seen_seqs.copy()
+        self.seen_seqs = {AronsonSequence(self.letter, [], self.direction)}  # every set contains the empty sequence
+        self.iter_dict[self.cur_iter] = self.seen_seqs.copy()  # initial set
         self.subset_dict = defaultdict(set)  # used for fast generation
 
     @property
@@ -84,48 +97,44 @@ class AronsonSet:
     @classmethod
     def from_sequence(cls, seq: AronsonSequence = None):
         """
-        constructor from AronsonSequence.
+        constructor of singleton set (holding a single non-empty AronsonSequence instance).
         :param seq: AronsonSequence
         :return: instance
         """
-        # default
         seq = seq if seq is not None else AronsonSequence('t')
         if not seq.is_correct():
+            # sequence must be correct
             raise VerificationError(input_seq=seq)
         obj = cls(seq.get_letter(), seq.get_direction())
-        obj._update_iter({seq})
+        obj._update_iter({seq})  # update seen_seqs and iter_dict
         return obj
 
-    # Nice implementation: take union of singleton Sets
     @classmethod
     def from_set(cls, seqs: set[AronsonSequence] = None):
         """
         constructor from set of AronsonSequence instances.
-        :param seqs: set of instances
+        :param seqs: set of AronsonSequence instances
         :return: class instance
         """
         seqs = {AronsonSequence('t')} if (seqs is None or not seqs) else seqs
         field_set = set()
         sets = []
         for seq in seqs:
-            s = cls.from_sequence(seq)
-            sets.append(s)
+            s = cls.from_sequence(seq)  # use previous constructor
             field_set.add((s.get_letter(), s.get_direction()))
             if len(field_set) > 1:
+                # conflicting directions or letters
                 raise ValueError("All sequences must have same letter and direction")
-        # Return one AronsonSet consisting of all sequences
+            sets.append(s)
+        # Union over singleton instances, see __or__() method
         return reduce(lambda a, b: a | b, sets)
 
     def is_correct(self, seq: AronsonSequence):
         """
-        If given sequence is correct with regard to class instance
+        Is given sequence correct with regard to class instance
         :param seq: AronsonSequence to be verified
         :return: True/False
         """
-
-        # key = tuple(seq.get_elements())
-        # if key not in self.correctness_cache:
-        #     self.correctness_cache[key] = seq.is_correct()
 
         return (
                 seq.get_letter() == self.display_letter and
@@ -149,37 +158,31 @@ class AronsonSet:
         :param seqs: for updating
         :return: None
         """
-        # Update stuff where necessary
+        # Update sets and dicts
         self.iter_dict[self.cur_iter].update(seqs)
         self.seen_seqs.update(seqs)
 
-    # Don't use this in case there is any forward-referring element in the sequence
+    # Valid only if no forward-referring element in the input sequence,
+    # does nothing if sequence is prefix-complete
     @staticmethod
     def backward_search(seq: AronsonSequence):
         """
-        Find all occurrences missing in sentence prefix and
+        Find all occurrences missing in sentence prefix
         :param seq: for which to find occurrences
         :return: set of new sequences with appended missing occurrences
         """
-        # does nothing if sequence is prefix complete!
         occurrences = seq.get_prefix_missing()
-        new_seqs = set()
-        for occ in occurrences:
-            seq_cpy = seq.copy()
-            seq_cpy.append_elements([occ])
-            new_seqs.add(seq_cpy)
-        return new_seqs
+        # using __add__() operator of AronsonSequence class
+        return {seq.copy() + AronsonSequence(seq.letter, [occ], seq.direction) for occ in occurrences}
 
     def _agen(self, seq: AronsonSequence):
         """
         Internal generator for backwards-based generation.
-
         :param seq: An optional AronsonSequence to generate from.
         :return: A generator yielding new indices for the sequence.
         """
-        idx = seq.get_prefix()
-        s = seq.get_sentence()
-        s = s[idx:-LEN_SUFFIX] if self.direction == Direction.FORWARD else s[LEN_PREFIX: (-idx if idx else None)][::-1]
+        idx, s = seq.get_prefix(), seq.get_sentence()
+        s = s[idx:-LEN_SUFFIX] if self.direction == Direction.FORWARD else s[LEN_PREFIX: -idx if idx else None][::-1]
         while True:
             # generator yields as many indices as required
             idx_rel = 1 + s.find(self.letter)  # Find the relative position of the letter
@@ -187,9 +190,10 @@ class AronsonSet:
                 break
             idx += idx_rel
             yield idx
-            s = s[idx_rel:] + (seq.n2w(idx) if self.direction == Direction.FORWARD else seq.n2w(idx)[::-1])
+            ordinal = seq.n2w(idx)
+            s = s[idx_rel:] + (ordinal if self.direction == Direction.FORWARD else ordinal[::-1])
 
-    # For well-behaved sequences (no forward referring!)
+    # Valid only if no forward referring elements in input sequence
     def backward_generate(self, n: int, seq: AronsonSequence = None):
         """
         Generate new sequences from well-behaved sequences (with backward/self-referring elements only)
@@ -197,19 +201,17 @@ class AronsonSet:
         :param seq: for generation, optional
         :return: generated sequence with n new elements
         """
-        # generate empty AronsonSequence if no argument
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
         if n < 0:
             raise ValueError(" n must be non negative")
         new_elements = list(islice(self._agen(seq=seq), n))
-        # don't modify original
-        seq_cpy = seq.copy()
-        seq_cpy.append_elements(new_elements)
-
-        if len(seq_cpy) < len(seq) + n:
+        new_seq = seq + AronsonSequence(seq.letter, new_elements, seq.direction)
+        if len(new_seq) < len(seq) + n:
             # could not extend sequence up to desired length
-            raise GenError(n=n)
-        return {seq_cpy}
+            raise GenError(len(seq) + n, ErrorMode.ELEM_MODE)
+
+        # singleton set
+        return {new_seq}
 
     def generate_aronson(self, n: int) -> set[AronsonSequence]:
         """ Wrapper for backward_generate() method with default arguments"""
@@ -217,18 +219,17 @@ class AronsonSet:
 
     def swap(self, seq: AronsonSequence = None):
         """
-        are allowed to swap two elements if the position to which any element points is unaffected by the swap
+        Swap two elements if the positions to which all elements point are unaffected by the swap
         :param seq: AronsonSequence object
         :return: set of newly generated sets in which swapping is legal
         """
-        new_sets = set()
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
+        new_sets = set()
         for i, j in combinations(range(len(seq)), 2):
             ranges = [seq.get_range(seq[x]) for x in [i, j]]
-            # anything in between is affected
             range_of_effect = range(min(r.start for r in ranges), max(r.stop for r in ranges))
-            # need to look at all elements.
             if all(x - 1 not in range_of_effect for x in seq.get_elements()):
+                # all elements unaffected
                 swapped = seq.get_elements().copy()
                 swapped[i], swapped[j] = swapped[j], swapped[i]
                 new_sets.add(AronsonSequence(self.letter, swapped, self.direction))
@@ -236,8 +237,11 @@ class AronsonSet:
 
     @staticmethod
     def _subset_to_index_pairs(seq_length):
-        """ Map each index pair (i, j) to all non-empty subsets of indices strictly in between.
-            If i and j are adjacent, also include each individually as possible subsets.
+        """
+        Map each index pair (i, j) to all non-empty subsets of indices strictly in between.
+        If i and j are adjacent, also include each individually as possible subsets.
+        :param seq_length: for which to find index pairs
+        :return: relevant pairs
         """
         index_pair_subsets = defaultdict(list)
         for i in range(seq_length):
@@ -253,9 +257,10 @@ class AronsonSet:
                             index_pair_subsets[(i, j)].append(sub)
         return index_pair_subsets
 
+    # Valid only for backward-referring sequences.
     def subset(self, seq: AronsonSequence = None):
         """
-        Can take subset if other elements aren't affected. This only works for backward-referring sequences.
+        Take subset if other elements aren't affected.
         :param self:
         :param seq: AronsonSequence object
         :return: set of newly generated sets in which swapping is legal
@@ -265,20 +270,20 @@ class AronsonSet:
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
         if len(seq) > self.cur_iter:
             self.subset_dict = self._subset_to_index_pairs(len(seq))
-        # Idea is to pick arbitrary pairs and delete every subset in between
+        # pick arbitrary pairs and delete every subset in between
         for i, j in combinations(range(len(seq)), 2):
             for sub in self.subset_dict[(i, j)]:
                 ranges = [seq.get_range(seq[x]) for x in sub]
-                # anything after first omitted is affected
+                # anything after first discarded element is affected
                 range_min = min(r.start for r in ranges)
-                # All elements need to refer backwards before point of first point of omission
                 if all(x - 1 < range_min for x in seq.get_elements()):
+                    # All elements refer backwards before index of omitted element
                     sub_seq = seq.get_elements().copy()
                     [sub_seq.remove(seq[s]) for s in sub]
                     new_sets.add(AronsonSequence(self.letter, sub_seq, self.direction))
         return new_sets
 
-    # For sequences with only backward and self-referring elements (otherwise use forward_fix)
+    # Valid for sequences with no forward referring elements
     def forward_generate(self, seq: AronsonSequence = None):
         """
         Generate by searching within a bounded search space for valid ordinals
@@ -287,24 +292,23 @@ class AronsonSet:
         """
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
         sentence_len = len(seq.get_sentence())
-        # for generating all singleton AronsonSequences in first iteration
+        # generate all singletons if no input
         lower_bound = 1 if seq.is_empty() else sentence_len - (
             LEN_SUFFIX if seq.direction == Direction.FORWARD else LEN_PREFIX) - 1
         new_seqs = set()
-        # num bits in length
+        # number of digits in sentence length
         ord_key = len(str(sentence_len))
         if seq.is_empty():
             upper_bound = ORD_TABLE[ord_key] + sentence_len
         else:
             upper_bound = len(seq) * ORD_TABLE[ord_key] + sentence_len
 
-        # make more efficient?
         for elem in range(lower_bound, upper_bound + 1):
+            # exhaustive search
             if elem in self.non_elements:
+                # skip
                 continue
-            candidate = seq.copy()
-            candidate.append_elements([elem])
-            # brute-force search within bounded search space
+            candidate = seq + AronsonSequence(seq.letter, [elem], seq.direction)
             if self.is_correct(candidate):
                 new_seqs.add(candidate)
         return new_seqs
@@ -316,32 +320,58 @@ class AronsonSet:
         """
         return self.forward_generate(AronsonSequence(self.letter, [], self.direction))
 
-    # For generating ground truths in first three iterations (infeasible afterwards)
-    def generate_full(self, n_iterations: int):
+    # Currently infeasible from n > 4
+    def generate_full(self, n_iterations: int, error_rate: float = 0.):
+        """
+        Exhaustive generation of all Aronson sequences up to given length
+        :param error_rate:
+        :param n_iterations: max length of generated sequences
+        :return: None
+        """
         if n_iterations <= 0:
             return
 
         def is_valid_extension(elem, current_perm):
+            """
+            helper for checking validity of new sequence elements
+            :param elem: to add
+            :param current_perm: which elem is added to
+            :return: True or False
+            """
             if elem in self.non_elements or (elem - 1 in current_perm and elem - 2 in current_perm) or \
                     (elem + 1 in current_perm and elem + 2 in current_perm):
                 return False
             return True
 
         def backtrack(current_perm, current_sum, remaining, max_len):
+            """
+            helper for looking over potential sequences
+            :param current_perm: input to add to
+            :param current_sum: ongoing computation of metric
+            :param remaining: elements to add
+            :param max_len: of generation
+            :return: None
+            """
             if len(current_perm) == max_len:
                 # Apply metric check only now
                 mean = sum(current_perm) / len(current_perm)
                 metric = max(x - mean for x in current_perm)
-                if metric <= ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key]):
+                upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key]) + 1
+                if metric <= (1 - error_rate) * upper_metric_bound:
+                    # no extreme outliers
                     yield current_perm.copy()
                 return
-            for elem in sorted(remaining):
+
+            # check beginning of third iteration
+            # for elem in sorted(remaining):
+            for elem in remaining:
                 if is_valid_extension(elem, current_perm):
                     current_perm.append(elem)
                     remaining.remove(elem)
                     yield from backtrack(current_perm, current_sum + elem, remaining, max_len)
                     remaining.add(current_perm.pop())
 
+        # main generation engine
         while self.cur_iter < n_iterations:
             self.cur_iter += 1
             cur_ord_key = ORD_INITIAL
@@ -349,19 +379,24 @@ class AronsonSet:
             if upper_bound >= 10 ** (cur_ord_key + 1):
                 cur_ord_key += 1
 
-            allowed_elements = [x for x in range(1, upper_bound) if x not in self.non_elements]
-            initial_remaining = set(allowed_elements)
+            initial_remaining = {x for x in range(1, upper_bound) if x not in self.non_elements}
 
             cur_seqs = set()
             for perm in backtrack([], 0, initial_remaining, self.cur_iter):
+                # check only relevant sequences
                 seq = AronsonSequence(self.letter, perm, self.direction)
                 if self.is_correct(seq):
                     cur_seqs.add(seq)
 
             self._update_iter(cur_seqs)
 
-    def generate_fast(self, n_iterations: int):
-        """Optimized generation using swap/subset operations"""
+    def generate_fast(self, n_iterations: int, forward_generate=True):
+        """
+        Optimized generation using swap/subset operations
+        :param forward_generate: more expensive computationally
+        :param n_iterations: to generate for
+        :return: None
+        """
         if n_iterations < 0:
             raise ValueError("Num of iterations must be non-negative")
         if n_iterations == 0:
@@ -373,36 +408,44 @@ class AronsonSet:
             self.cur_iter += 1
             # update subset_dict
             self.subset_dict = self._subset_to_index_pairs(self.cur_iter)
-            cur_seqs = self.generate_singletons() if self.cur_iter == 1 else set().union(
-                *(self.swap(seq) | self.subset(seq) for seq in prev_seqs))
-            for seq in (s for s in prev_seqs if not s.has_forward_ref()):
-                cur_seqs.update(self._handle_backward_rules(seq))
 
-            self._update_filtered(cur_seqs)
+            if self.cur_iter == 1:
+                cur_seqs = self.generate_singletons()
+            else:
+                cur_seqs = set()
+                for seq in (s for s in prev_seqs ):
+                    cur_seqs.update(self.swap(seq))
+                    cur_seqs.update(self.subset(seq))
+                    if not seq.has_forward_ref():
+                        cur_seqs.update(self._handle_backward_rules(seq))
+                        if forward_generate:
+                            # Becomes computationally expensive
+                            cur_seqs.update(self.forward_generate(seq))
 
-            # Helper methods
+            filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
+            if not filtered:
+                # converged
+                raise GenError(self.cur_iter)
+            self._update_iter(filtered)
 
     def _handle_backward_rules(self, seq):
-        """Handle backward-looking generation rules"""
+        """
+        Handle backward generation rules
+        :param seq: to generate from
+        :return: all generated sequences
+        """
         results = set()
         if not seq.is_prefix_complete():
             results.update(self.backward_search(seq))
         with suppress(GenError):
+            # ignore whatever failed to generate
             results.update(self.backward_generate(1, seq))
-            # currently finds 5 sequences forward_fix doesn't. why?
-        results.update(self.forward_generate(seq))
         return results
 
-    def _update_filtered(self, cur_seqs):
-        """Update seen sequences with filtered results"""
-        filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
-        if not filtered:
-            raise GenError("converged")
-        self._update_iter(filtered)
-
+    # getters
     def filter_elements(self, elems):
         """
-        return all seen sequences including elements in elems
+        return all seen sequences containing elements
         :param elems: for sequences
         :return: set of seen sequences including elems
 
@@ -413,53 +456,59 @@ class AronsonSet:
 
     def filter_symmetric(self):
         """
-        return all seen sequences for which all permutations in set
-        :return: set of seen sequences including elems
-
+        return all sequences in set for which all permutations are also in set
+        :return: set of such sequences
         """
-        checked = set()
-        seq_set: set[AronsonSequence] = set()
+        symm_set: set[AronsonSequence] = set()
         for seq in self.seen_seqs:
-            elem_set = frozenset(seq)
-            if elem_set not in checked:
-                checked.add(elem_set)
             seq_perm = {AronsonSequence(self.letter, list(perm), self.direction) for perm in
                         permutations(seq, len(seq))}
             if all(perm in self.seen_seqs for perm in seq_perm):
-                seq_set.update(seq_perm)
-        return AronsonSet.from_set(seq_set)
+                symm_set.update(seq_perm)
+        return AronsonSet.from_set(symm_set)
 
-    def find_non_elements(self, n_iter):
-        # idea: look at all generated sequences, look for elements which appear in non.
-        if n_iter <= 0:
+    # Buggy?
+    def find_non_elements(self, n_iter=None):
+        """
+        Find all elements up to maximum element in set which do not appear in any sequence
+        :param n_iter: to look within
+        :return: elements
+        """
+        if n_iter is not None and (n_iter < 0 or n_iter > self.cur_iter):
+            raise ValueError("must choose correct iteration")
+        if len(self.seen_seqs) == 1:
+            # trivially empty
             return set()
-        seen_elems = reduce(set.__or__, [set(seq) for seq in self.iter_dict[n_iter]])
-        return set(range(1, max(seen_elems))) - seen_elems
+        search_set = self.iter_dict[n_iter] if n_iter is not None else self.seen_seqs
+        seen_elems = {elem for seq in search_set for elem in seq}
+        # set has at least one non-empty sequence-> max is defined
+        return set(range(1, self.max)) - seen_elems
 
     def get_elements(self):
+        """ get all elements appearing in some sequence in set"""
         return {elem for seq in self.seen_seqs for elem in seq}
 
-    def get_exotic_sequences(self, other: 'AronsonSet'):
-        # want to get sequences in other set which contain elements missing in the current set
+    def get_unique_element_sequences(self, other: 'AronsonSet'):
+        """ Get all sequences holding elements not appearing in any sequence in other set"""
         missing_elements = self.get_elements() - other.get_elements()
         return {seq for seq in self.seen_seqs if any(elem in seq for elem in missing_elements)}
 
-    def filter_refs(self, refs):
+    def filter_refs(self, refs: set[Direction]):
         """
-        return all seen sequences including reference pointers in refs
+        return all seen sequences including elements with reference pointers in the set refs
         :param refs: pointers for elements in sequence
         :return: set of seen sequences including refs
 
         """
         if not isinstance(refs, set):
             raise ValueError("input argument must be a set")
-        return AronsonSet.from_set({
-            seq for seq in self.seen_seqs
-            if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})
-        })
+        # val is (range[], Refer.Type) for val in seq.get_refer_dict().values
+        seqs_set = {seq for seq in self.seen_seqs if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})}
+        return AronsonSet.from_set(seqs_set)
 
     # Utility methods
     def copy(self):
+        """ shallow copy for new instance"""
         new_set = AronsonSet(self.letter, self.direction)
         new_set.set_iter_dict(self.iter_dict)
         return new_set
@@ -469,11 +518,8 @@ class AronsonSet:
         self.set_iter_dict({})
 
     # Setters
-    def set_subset_dict(self, seq: AronsonSequence):
-        """ Helper"""
-        self.subset_dict = self._subset_to_index_pairs(len(seq))
-
     def set_iter_dict(self, new_dict):
+        """ main setter, of iteration dictionary and relevant set of seen sequences"""
         # Set always includes empty AronsonSequence
         new_dict = {0: {AronsonSequence(self.letter, [], self.direction)}} if not new_dict else new_dict
         field_set = {(s.get_letter(), s.get_direction()) for sets in new_dict.values() for s in sets}
@@ -493,8 +539,7 @@ class AronsonSet:
         """ Flip direction of an empty set"""
         if len(self.seen_seqs) > 1:
             raise ValueError("Can't flip direction of non-default AronsonSet instance.")
-        # is empty
-        self.direction = self.direction.opposite()
+        self.direction = self.direction.flip
         for seq in self.seen_seqs:
             # there is only sequence here
             seq.flip_direction()
@@ -524,28 +569,26 @@ class AronsonSet:
         set2 = other.copy()
         set1.generate_full(n)
         set2.generate_full(n)
-        # Compute the result of the set operation
-        result = set_op({tuple(seq.get_elements()) for seq in set1.get_seen_seqs()},
-                        {tuple(seq.get_elements()) for seq in set2.get_seen_seqs()})
+        # can't use AronsonSequence instances themselves for set operation
+        op_result = set_op({tuple(seq.get_elements()) for seq in set1},
+                           {tuple(seq.get_elements()) for seq in set2})
 
         # Build new iter_dict: for each sequence, track min of iter found in seq1 or seq2
         new_iter_dict = defaultdict(set)
-        if result:
-            # Always retain the empty set
-            new_iter_dict[0].add(AronsonSequence(set1.letter, [], set1.direction))
+        new_iter_dict[0].add(AronsonSequence(set1.letter, [], set1.direction))
 
-        for elem in result:
-            # float('inf') is default val in case not found
+        for elem in op_result:
             for_seq = list(elem)
+            # float('inf') is default val in case not found
             iter1 = next(search_dict(AronsonSequence(set1.letter, for_seq, set1.direction), set1), float('inf'))
             iter2 = next(search_dict(AronsonSequence(set2.letter, for_seq, set2.direction), set2), float('inf'))
             gen_iter = min(iter1, iter2)
             # set direction be first set
             new_iter_dict[gen_iter].add(AronsonSequence(set1.letter, for_seq, set1.direction))
         # Construct new AronsonSet, set direction as that of first set
-        result = AronsonSet(set1.get_letter(), set1.get_direction())
-        result.set_iter_dict(new_iter_dict)
-        return result
+        new_set = AronsonSet(set1.get_letter(), set1.get_direction())
+        new_set.set_iter_dict(new_iter_dict)
+        return new_set
 
     # getters
     def get_seen_seqs(self):
@@ -566,13 +609,33 @@ class AronsonSet:
     def get_direction(self):
         return self.direction
 
+    def peek(self):
+        """ Recover an arbitrary sequence from seen sequences"""
+        s = self.seen_seqs.pop()
+        self.seen_seqs.add(s)
+        return s
+
+    def discard(self, seq: AronsonSequence):
+        """
+        discard a sequence from a set. Discarding a set of sequences can be accomplished via
+        :param seq: to be discarded
+        :return: None
+        """
+        self.__isub__(AronsonSet.from_set({seq}))
+
+    @property
+    def max(self):
+        """ maximum element seen in some sequence in the set"""
+        if len(self.seen_seqs) == 1:
+            raise ValueError("Set contains only the empty sequence")
+        return max(seq.get_prefix() for seq in self.iter_dict[self.cur_iter])
+
     # operator overloading
     def __and__(self, other: 'AronsonSet', n: int = 0):
         """
         & operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-
         :return: set instance
         """
         return self._set_operation_core(other, set.intersection, n)
@@ -582,7 +645,6 @@ class AronsonSet:
         &= operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-
         :return: set instance
         """
         result = self._set_operation_core(other, set.intersection, n)
@@ -595,7 +657,6 @@ class AronsonSet:
         | operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-
         :return: set instance
         """
         if self.direction != other.direction:
@@ -607,7 +668,6 @@ class AronsonSet:
         |= operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-
         :return: set instance
         """
         if self.direction != other.direction:
@@ -622,7 +682,6 @@ class AronsonSet:
         - operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-
         :return: set instance
         """
         # take difference with intersection (which has same direction) if directions not aligned
@@ -634,7 +693,6 @@ class AronsonSet:
         -= operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
-
         :return: set instance
         """
         # take difference with intersection (which has same direction) if directions not aligned
@@ -696,9 +754,3 @@ class AronsonSet:
             self.direction,
             self._hashable_iter_dict
         ))
-
-    @property
-    def max(self):
-        if len(self.seen_seqs) == 1:
-            raise ValueError("Set contains only the empty sequence")
-        return max(seq.get_prefix() for seq in self.iter_dict[self.cur_iter])

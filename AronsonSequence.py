@@ -35,7 +35,8 @@ class Direction(Enum):
     FORWARD = 1
     BACKWARD = 2
 
-    def opposite(self):
+    @property
+    def flip(self):
         return Direction.BACKWARD if self == Direction.FORWARD else Direction.FORWARD
 
 
@@ -200,6 +201,13 @@ class AronsonSequence:
         """
         return {i for i in self.occurrences if i <= idx} if idx is not None else self.occurrences
 
+    @classmethod
+    def is_permutation(cls, seq1: 'AronsonSequence', seq2: 'AronsonSequence'):
+        """ """
+        if seq1.display_letter != seq2.get_letter() or seq1.direction != seq2.get_direction():
+            raise ValueError("Letter and direction must be the same")
+        return set(seq1.get_elements()) == set(seq2.get_elements())
+
     def is_complete(self):
         """
         Checks if the sequence is self-contained, i.e., the positions of the letter in the sentence match the elements.
@@ -293,7 +301,7 @@ class AronsonSequence:
 
         Updates the sentence accordingly.
         """
-        self.direction = self.direction.opposite()
+        self.direction = self.direction.flip
         # need to update sentence
         self._update_sentence()
 

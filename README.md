@@ -8,7 +8,7 @@ The  `AronsonSet` (collections of sequences) class constitutes a generalization 
 
 See [this](https://ikavodo.github.io/aronson-1/) for more details.
 
-[![Tests](https://img.shields.io/badge/tests-90%25%20coverage-green)]
+[![Tests](https://img.shields.io/badge/tests-98%25%20coverage-green)]
 
 ## Features
 

@@ -50,13 +50,15 @@ Manages collections of valid sequences with:
 
 ```python
 # Generate and analyze sequences
-aset = AronsonSet('t', Direction.BACKWARD)
-empty_seq = aset.peek() 
+aset1 = AronsonSet('t', Direction.BACKWARD)
+empty_seq = aset1.peek() 
 print(empty_seq) # "T is the letter"
-seq1 = aset.generate_aronson(3) # generates AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
-print(aset.is_correct(seq1)) # True
-seq2 = AronsonSequence('t', [1, 4, 11])
-print(aset.is_correct(seq2)) # False, sequence is incorrect in set context
+seq1 = aset1.generate_aronson(3).pop() # AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
+print(aset1.is_correct(seq1)) # True
+aset2 = AronsonSet('t') # Forward
+seq2 = aset2.generate_aronson(3).pop()
+print(aset1.is_correct(seq2)) # False, sequence is incorrect in set context
+print(aset2.is_correct(seq1)) # False
 ```
 
 ## Advanced Usage

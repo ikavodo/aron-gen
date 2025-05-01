@@ -352,7 +352,6 @@ class AronsonSet:
             :return: None
             """
             if len(current_perm) == max_len:
-                # Apply metric check only now
                 mean = sum(current_perm) / len(current_perm)
                 metric = max(x - mean for x in current_perm)
                 upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key])
@@ -364,8 +363,6 @@ class AronsonSet:
                     yield current_perm.copy()
                 return
 
-            # check beginning of third iteration
-            # for elem in sorted(remaining):
             for elem in remaining:
                 if is_valid_extension(elem, current_perm):
                     current_perm.append(elem)
@@ -373,7 +370,7 @@ class AronsonSet:
                     yield from backtrack(current_perm, current_sum + elem, remaining, max_len)
                     remaining.add(current_perm.pop())
 
-        # main generation engine
+        # generation engine
         while self.cur_iter < n_iterations:
             self.cur_iter += 1
             cur_ord_key = ORD_INITIAL

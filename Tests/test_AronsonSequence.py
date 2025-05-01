@@ -424,6 +424,5 @@ class AronsonSequenceTests(unittest.TestCase):
             for i, elem in enumerate(seq):
                 self.assertEqual(seq.__index__(elem), i)
 
-
         if __name__ == '__main__':
             unittest.main()

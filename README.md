@@ -27,9 +27,9 @@ aronson_initial = [1, 4, 11] # first three terms in Aronson's sequence
 seq1 = AronsonSequence(letter, aronson_initial)
 print(seq1)  # "T is the first, fourth, eleventh letter in this sentence, not counting commas and spaces"
 seq1.is_correct()  # True
-{seq1.get_ref(elem) for elem in aronson_initial} # {Refer.BACKWARD}, meaning all elements refer before their positions
-seq.is_prefix_complete() # True, as all occurrences of T up to max(aronson_initial) are accounted for
-seq.is_complete() # False, the first n terms of the Aronson sequence are never complete (making the series infinite)
+{seq1.get_ref(elem) for elem in aronson_initial} # {Refer.BACKWARD}
+seq.is_prefix_complete() # True
+seq.is_complete() # False
 seq1.append_elements([16]) # Next element in Aronson
 seq1.is_correct() # True
 
@@ -38,7 +38,7 @@ seq2 = AronsonSequence(letter, aronson_reverse, Direction.BACKWARD) # Reverse Ar
 print(seq2)  # "Not counting commas and spaces, in this sentence backwards T is the eleventh, fourth, third letter"
 seq2.is_correct()  # True
 seq.is_prefix_complete() # True
-seq1.append_elements([16]) # Wrong element, maps to 'o'
+seq1.append_elements([16]) # Wrong element
 seq1.is_correct() # False
 
 ```
@@ -117,7 +117,6 @@ pip install -r requirements.txt  # Requires num2words
 Comprehensive test suite covering:
 
 - Sequence validation and reference resolution
-- Generation method comparisons
 - Set operation correctness
 - Edge case handling
 - Performance benchmarks

@@ -1,6 +1,8 @@
 # Aronson Sequence Generator
 
-A Python implementation of self-referential sentences inspired by the ["Aronson sequence"](https://oeis.org/A005224), featuring combinatorial generation and validation of semantically-correct instances. Built around two core classes: `AronsonSequence` (individual sequences) and `AronsonSet` (collections of sequences).
+A Python implementation of two classes representing self-referential sentences (AronsonSequence), and collections thereof (AronsonSet). 
+The prototype which inspired the first core class `AronsonSequence` is ["Aronson's sequence"](https://oeis.org/A005224), first coined by J. K. Aronson, and quoted by D. R. Hofstadter in his book "Methamagical Themas" (1983).
+The  `AronsonSet` (collections of sequences) class constitutes a generalization of Aronson's sequence to all sentences "Ω is the X, Y, Z... letter", where Ω \in Σ is a letter in the alphabet and the sentence is semantically correct (meaning X, Y, Z are ordinals which map to occurrences of the letter Ω in the sentence).  
 
 See [this](https://ikavodo.github.io/aronson-1/) for more details.
 
@@ -18,9 +20,23 @@ Models self-referential sentences with:
 
 ```python
 # Create and validate sequence
-seq1 = AronsonSequence('t', [1, 4, 11])
-print(seq1.is_correct())  # True
+aronson_initial = [1, 4, 11] # first three terms in Aronson's sequence
+letter = 't'
+seq1 = AronsonSequence(letter, aronson_initial)
 print(seq1)  # "T is the first, fourth, eleventh letter in this sentence..."
+print(seq1.is_correct())  # True
+print({seq1.get_ref(elem) for elem in aronson_initial}) # {Refer.BACKWARD}, meaning all elements refer before their positions
+print(seq.is_prefix_complete()) # True, as all occurrences of T up to max(aronson_initial) are accounted for
+print(seq.is_complete()) # False, the first n terms of the Aronson sequence are never complete (making the series infinite)
+
+seq2 = AronsonSequence(letter, aronson_initial[::-1])
+print(seq.is_permutation(seq2) # True
+print(seq2.is_correct())  # False, the eleventh index is not a T 
+print({seq1.get_refer_val(elem) for elem in aronson_initial}) # {Refer.BACKWARD, Refer.SELF}, first element refers an index within its own ordinal representation
+print(seq.is_prefix_complete()) # False
+
+seq1.append_elements([16]) # Next element in Aronson
+seq1.is_correct() # True
 ```
 
 ### `AronsonSet` Class

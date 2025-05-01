@@ -549,10 +549,11 @@ class AronsonSetTests(unittest.TestCase):
         # check same
         aset = AronsonSet('t')
         emp_set = aset.copy()
-        aset.generate_full(1)
+        aset.generate_full(3)
         self.assertEqual(aset & emp_set, emp_set)
         aset_back = AronsonSet('t', Direction.BACKWARD)
-        intersect = (aset.__and__(aset_back, 2))
+        aset_back.generate_full(3)
+        intersect = (aset.__and__(aset_back, 4, 0.25))
         for seq in {AronsonSequence('t'), AronsonSequence('t', [4]), AronsonSequence('t', [19])}:
             self.assertIn(seq, intersect.get_seen_seqs())
 
@@ -767,6 +768,18 @@ class AronsonSetTests(unittest.TestCase):
             if not aseq.is_empty():
                 # discarded non-empty set, should be removed
                 self.assertNotEqual(aset.peek(), aseq)
+
+    def test_len_dict(self):
+        singleton_elems = [{1, 4, 10, 12, 19, 21, 22}, {3, 4, 8, 19, 23, 24}]
+        for elems, direction in zip(singleton_elems, Direction):
+            aset = AronsonSet('t', direction)
+            d_emp = aset.get_len_dict()
+            self.assertEqual(len(d_emp.items()), len(aset))
+            aset.generate_full(1)
+            d_singleton = aset.get_len_dict()
+            for item in d_emp.items():
+                self.assertIn(item, d_singleton.items())
+            self.assertEqual(d_singleton[1], len(elems))
 
 
 if __name__ == '__main__':

@@ -3,7 +3,7 @@ from itertools import islice, combinations, permutations
 from math import log2, ceil
 
 from AronsonSequence import AronsonSequence, Direction, LEN_PREFIX, LEN_SUFFIX
-from collections import defaultdict
+from collections import defaultdict, Counter
 from typing import Callable
 from functools import reduce
 from contextlib import suppress
@@ -320,10 +320,11 @@ class AronsonSet:
         return self.forward_generate(AronsonSequence(self.letter, [], self.direction))
 
     # Currently infeasible from n >= 4
-    def generate_full(self, n_iterations: int, error_rate: float = 0.01):
+    def generate_full(self, n_iterations: int, error_rate: float = 0.):
         """
         Exhaustive generation of all Aronson sequences up to given length
-        :param error_rate: degree of precision, with 0. corresponding to no error, 1. to complete
+        :param error_rate: degree of search precision, with 0. corresponding to no error and 1 to no sequences found.
+        Is pessimistic- (sequences_found/total_sequences) >= (1 - error_rate) for n_iterations <= 4
         :param n_iterations: max length of generated sequences
         :return: None
         """
@@ -545,7 +546,7 @@ class AronsonSet:
             seq.flip_direction()
 
     def _set_operation_core(self: 'AronsonSet', other: 'AronsonSet', set_op: Callable[[set, set], set],
-                            n: int = 0) -> 'AronsonSet':
+                            n: int = 0, error_rate=0.) -> 'AronsonSet':
         """
         Core logic for set operations on AronsonSets.
         Produces a new AronsonSet that is the result of applying `set_op` (e.g., union, intersection)
@@ -567,8 +568,8 @@ class AronsonSet:
         # don't modify inputs
         set1 = self.copy()
         set2 = other.copy()
-        set1.generate_full(n)
-        set2.generate_full(n)
+        set1.generate_full(n, error_rate)
+        set2.generate_full(n, error_rate)
         # can't use AronsonSequence instances themselves for set operation
         op_result = set_op({tuple(seq.get_elements()) for seq in set1},
                            {tuple(seq.get_elements()) for seq in set2})
@@ -630,29 +631,36 @@ class AronsonSet:
             raise ValueError("Set contains only the empty sequence")
         return max(seq.get_prefix() for seq in self.iter_dict[self.cur_iter])
 
+    def get_len_dict(self):
+        """
+        get dictionary mapping lengths of sequences to number of sequences in set.
+        :return:
+        """
+        return Counter(len(seq) for seq in self.seen_seqs)
+
     # operator overloading
-    def __and__(self, other: 'AronsonSet', n: int = 0):
+    def __and__(self, other: 'AronsonSet', n: int = 0, error_rate: float = 0.):
         """
         & operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
         :return: set instance
         """
-        return self._set_operation_core(other, set.intersection, n)
+        return self._set_operation_core(other, set.intersection, n, error_rate)
 
-    def __iand__(self, other, n: int = 0):
+    def __iand__(self, other, n: int = 0, error_rate: float = 0.):
         """
         &= operator over sets, wrapping set operation helper
         :param other: set
         :param n: generation iterations
         :return: set instance
         """
-        result = self._set_operation_core(other, set.intersection, n)
+        result = self._set_operation_core(other, set.intersection, n, error_rate)
         self.cur_iter = n
         self.set_iter_dict(result.get_iter_dict())
         return self
 
-    def __or__(self, other: 'AronsonSet', n: int = 0):
+    def __or__(self, other: 'AronsonSet', n: int = 0, error_rate: float = 0.):
         """
         | operator over sets, wrapping set operation helper
         :param other: set
@@ -661,9 +669,9 @@ class AronsonSet:
         """
         if self.direction != other.direction:
             raise ValueError("sets must have same direction")
-        return self._set_operation_core(other, set.union, n)
+        return self._set_operation_core(other, set.union, n, error_rate)
 
-    def __ior__(self, other: 'AronsonSet', n: int = 0):
+    def __ior__(self, other: 'AronsonSet', n: int = 0, error_rate: float = 0.):
         """
         |= operator over sets, wrapping set operation helper
         :param other: set
@@ -672,12 +680,12 @@ class AronsonSet:
         """
         if self.direction != other.direction:
             raise ValueError("sets must have same direction")
-        result = self._set_operation_core(other, set.union, n)
+        result = self._set_operation_core(other, set.union, n, error_rate)
         self.cur_iter = n
         self.set_iter_dict(result.get_iter_dict())
         return self
 
-    def __sub__(self, other: 'AronsonSet', n: int = 0):
+    def __sub__(self, other: 'AronsonSet', n: int = 0, error_rate: float = 0.):
         """
         - operator over sets, wrapping set operation helper
         :param other: set
@@ -685,10 +693,11 @@ class AronsonSet:
         :return: set instance
         """
         # take difference with intersection (which has same direction) if directions not aligned
-        return self._set_operation_core(other, set.difference, n) if self.direction == other.direction else \
-            self._set_operation_core(self & other, set.difference, n)
+        return self._set_operation_core(other, set.difference, n,
+                                        error_rate) if self.direction == other.direction else self._set_operation_core(
+            self & other, set.difference, n, error_rate)
 
-    def __isub__(self, other: 'AronsonSet', n: int = 0):
+    def __isub__(self, other: 'AronsonSet', n: int = 0, error_rate: float = 0.):
         """
         -= operator over sets, wrapping set operation helper
         :param other: set
@@ -696,8 +705,9 @@ class AronsonSet:
         :return: set instance
         """
         # take difference with intersection (which has same direction) if directions not aligned
-        result = self._set_operation_core(other, set.difference, n) if self.direction == other.direction else \
-            self._set_operation_core(self & other, set.difference, n)
+        result = self._set_operation_core(other, set.difference, n,
+                                          error_rate) if self.direction == other.direction else \
+            self._set_operation_core(self & other, set.difference, n, error_rate)
         self.cur_iter = n
         self.set_iter_dict(result.get_iter_dict())
         return self

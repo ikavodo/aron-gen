@@ -1,7 +1,7 @@
 # Aronson Sequence Generator
 
-A Python implementation of two classes representing self-referential sentences (AronsonSequence), and collections thereof (AronsonSet). 
-The prototype which inspired the first core class `AronsonSequence` is ["Aronson's sequence"](https://oeis.org/A005224), first coined by J. K. Aronson, and quoted by D. R. Hofstadter in his book "Methamagical Themas" (1983).
+A Python implementation of two classes representing self-referential sentences (`AronsonSequence`), and collections thereof (`AronsonSet`). 
+The prototype which inspired the first core class is ["Aronson's sequence"](https://oeis.org/A005224), first coined by J. K. Aronson, and quoted by D. R. Hofstadter in his book "Methamagical Themas" (1983).
 The  `AronsonSet` (collections of sequences) class constitutes a generalization of Aronson's sequence to all sentences "Ω is the X, Y, Z... letter", where Ω \in Σ is a letter in the alphabet and the sentence is semantically correct (meaning X, Y, Z are ordinals which map to occurrences of the letter Ω in the sentence).  
 
 See [this](https://ikavodo.github.io/aronson-1/) for more details.

@@ -32,6 +32,7 @@ class VerificationError(Exception):
     def __str__(self):
         return f"{self.message}: {self.input_seq}"
 
+
 class ErrorMode(Enum):
     """
     Enum for modes
@@ -51,7 +52,6 @@ class GenError(Exception):
         :param n_iters: Num of iterations
         """
 
-
     def __init__(self, n, message="Generating failed", error_mode=ErrorMode.ITER_MODE):
         self.n = n
         self.message = message
@@ -63,7 +63,6 @@ class GenError(Exception):
             return f"{self.message}: converged after {self.n} iterations"
         else:
             return f"{self.message}: stopped after {self.n} elements"
-
 
 
 # This class generates correct Aronson sequences up to a given number of elements
@@ -413,7 +412,7 @@ class AronsonSet:
                 cur_seqs = self.generate_singletons()
             else:
                 cur_seqs = set()
-                for seq in (s for s in prev_seqs ):
+                for seq in (s for s in prev_seqs):
                     cur_seqs.update(self.swap(seq))
                     cur_seqs.update(self.subset(seq))
                     if not seq.has_forward_ref():

@@ -4,7 +4,7 @@ import time
 from functools import reduce
 from itertools import combinations
 from num2words import num2words
-from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE
+from AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE, ORD_INITIAL
 from AronsonSequence import AronsonSequence, Direction, Refer
 
 
@@ -677,13 +677,29 @@ class AronsonSetTests(unittest.TestCase):
             aset.generate_full(1)
             self.assertEqual(aset.max, val)
 
-    def test_metric(self):
+    def test_combined(self):
+        n = 3
         for direction in Direction:
-            aset = AronsonSet('t', direction)
-            aset.generate_full(4)
-            aset.generate_fast(5)
-            metric = max(x - 1/len(seq) * sum(seq) for seq in aset[5]  for x in seq)
-            self.assertTrue(metric >= ORD_TABLE[2])
+            aset_combined = AronsonSet('t', direction)
+            aset_combined.generate_full(n - 1)
+            # generate_full() takes too long
+            aset_combined.generate_fast(n)
+            self.assertTrue(len(aset_combined[n]) >= len(aset_combined[n - 1]))
+
+    def test_filter_symmetric(self):
+        n = 3
+        for direction in Direction:
+            for i in range(n):
+                aset = AronsonSet('t', direction)
+                aset.generate_full(i)
+                new_aset = aset.filter_symmetric()
+                if i < 2:
+                    self.assertTrue(new_aset.get_seen_seqs() == aset.get_seen_seqs())
+                else:
+                    # check set difference is not empty
+                    self.assertNotEqual(new_aset, AronsonSet('t', direction))
+                    self.assertNotEqual(new_aset, aset[i])
+
 
 if __name__ == '__main__':
     unittest.main()

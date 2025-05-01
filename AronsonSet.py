@@ -1,4 +1,4 @@
-from itertools import islice, combinations
+from itertools import islice, combinations, permutations
 from math import log2, ceil
 
 from AronsonSequence import AronsonSequence, Direction, LEN_PREFIX, LEN_SUFFIX
@@ -410,6 +410,24 @@ class AronsonSet:
         if not isinstance(elems, set):
             raise ValueError("input argument must be a set")
         return AronsonSet.from_set({seq for seq in self.seen_seqs if all(elem in seq for elem in elems)})
+
+    def filter_symmetric(self):
+        """
+        return all seen sequences for which all permutations in set
+        :return: set of seen sequences including elems
+
+        """
+        checked = set()
+        seq_set: set[AronsonSequence] = set()
+        for seq in self.seen_seqs:
+            elem_set = frozenset(seq)
+            if elem_set not in checked:
+                checked.add(elem_set)
+            seq_perm = {AronsonSequence(self.letter, list(perm), self.direction) for perm in
+                        permutations(seq, len(seq))}
+            if all(perm in self.seen_seqs for perm in seq_perm):
+                seq_set.update(seq_perm)
+        return AronsonSet.from_set(seq_set)
 
     def find_non_elements(self, n_iter):
         # idea: look at all generated sequences, look for elements which appear in non.

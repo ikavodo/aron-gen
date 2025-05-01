@@ -224,7 +224,7 @@ class AronsonSet:
         seq = seq if seq is not None else AronsonSequence(self.letter, [], self.direction)
         new_sets = set()
         for i, j in combinations(range(len(seq)), 2):
-            ranges = [seq.get_range(seq[x]) for x in [i, j]]
+            ranges = [seq.get_range(seq[x]) for x in (i, j)]
             range_of_effect = range(min(r.start for r in ranges), max(r.stop for r in ranges))
             if all(x - 1 not in range_of_effect for x in seq.get_elements()):
                 # all elements unaffected
@@ -247,8 +247,7 @@ class AronsonSet:
                 mid = list(range(i + 1, j))  # indices strictly in between
                 if not mid:
                     # i and j are adjacent → allow deleting i or j individually
-                    index_pair_subsets[(i, j)].append((i,))
-                    index_pair_subsets[(i, j)].append((j,))
+                    [index_pair_subsets[(i, j)].append((x,)) for x in (i, j)]
                 else:
                     for r in range(1, len(mid) + 1):
                         for sub in combinations(mid, r):
@@ -405,20 +404,20 @@ class AronsonSet:
 
             prev_seqs = self.iter_dict[self.cur_iter]
             self.cur_iter += 1
-            # update subset_dict
-            self.subset_dict = self._subset_to_index_pairs(self.cur_iter)
 
             if self.cur_iter == 1:
                 cur_seqs = self.generate_singletons()
             else:
+                # update subset_dict
+                self.subset_dict = self._subset_to_index_pairs(self.cur_iter)
                 cur_seqs = set()
-                for seq in (s for s in prev_seqs):
+                for seq in prev_seqs:
                     cur_seqs.update(self.swap(seq))
                     cur_seqs.update(self.subset(seq))
                     if not seq.has_forward_ref():
                         cur_seqs.update(self._handle_backward_rules(seq))
                         if forward_generate:
-                            # Becomes computationally expensive
+                            # Computationally expensive at higher iterations
                             cur_seqs.update(self.forward_generate(seq))
 
             filtered = {seq for seq in cur_seqs if seq not in self.seen_seqs}
@@ -464,6 +463,7 @@ class AronsonSet:
             seq_perm = {AronsonSequence(self.letter, list(perm), self.direction) for perm in
                         permutations(seq, len(seq))}
             if all(perm in self.seen_seqs for perm in seq_perm) and len(seq) >= seq_len:
+                # have control over which length symmetric sequences to filter out
                 sym_set.update(seq_perm)
         return AronsonSet.from_set(sym_set)
 

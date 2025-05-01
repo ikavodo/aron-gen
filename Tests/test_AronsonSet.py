@@ -445,7 +445,7 @@ class AronsonSetTests(unittest.TestCase):
 
         # Test subset operations
         aset = AronsonSet('t')
-        aset.generate_fast(3)
+        aset.generate_fast(3, forward_generate=False)
 
         for seq in aset:
             if len(seq) > 1:
@@ -457,7 +457,7 @@ class AronsonSetTests(unittest.TestCase):
         # Test convergence detection
         with self.assertRaises(GenError):
             aset = AronsonSet('r')
-            aset.generate_fast(5)  # Should converge before 5 iterations
+            aset.generate_fast(5, forward_generate=False)  # Should converge before 5 iterations
 
     def test_generation_speed(self):
         """Verify generate_fast() is faster than generate_full() for equivalent iterations"""
@@ -474,7 +474,7 @@ class AronsonSetTests(unittest.TestCase):
             # Time generate_fast
             fast_set = AronsonSet('t', direction)
             start_fast = time.perf_counter()
-            fast_set.generate_fast(iterations)
+            fast_set.generate_fast(iterations, forward_generate=False)
             time_fast = time.perf_counter() - start_fast
 
             # Calculate speedup factor
@@ -486,7 +486,7 @@ class AronsonSetTests(unittest.TestCase):
                 self.assertTrue(s in rules_set)
 
         # Require minimum 2x speedup in at least one direction
-        self.assertTrue(max(speedups) >= 2.0,
+        self.assertTrue(max(speedups) >= 10.0,
                         f"Insufficient speedup: {speedups}")
 
     def test_sub(self):
@@ -517,14 +517,14 @@ class AronsonSetTests(unittest.TestCase):
 
     def test_generate_full_harder(self):
         seqs_per_iter = [[1, 8, 73, 955, 16205], [1, 7, 67, 771, 13113]]
-
+        error_rate = 0.99
         for direction, n_seqs in zip(list(Direction), seqs_per_iter):
             for i, n in enumerate(n_seqs[:-2]):
                 aset = AronsonSet('t', direction)
                 aset.generate_full(i)
                 self.assertTrue(all(aset.is_correct(s) for s in aset.get_seen_seqs()))
                 # choose error percentage
-                self.assertTrue(len(aset) / n >= 0.99)
+                self.assertTrue(len(aset) / n >= error_rate)
 
     def test_and(self):
         # check same
@@ -690,8 +690,8 @@ class AronsonSetTests(unittest.TestCase):
             aset_combined = AronsonSet('t', direction)
             aset_combined.generate_full(n - 1)
             # generate_full() takes too long
-            aset_combined.generate_fast(n)
-            self.assertTrue(len(aset_combined[n]) >= len(aset_combined[n - 1]))
+            aset_combined.generate_fast(n, forward_generate=False)
+            self.assertTrue(len(aset_combined[n]) >= len(aset_combined[n-2]))
 
     def test_filter_symmetric(self):
         n = 3

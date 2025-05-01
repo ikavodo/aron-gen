@@ -537,6 +537,7 @@ class AronsonSetTests(unittest.TestCase):
         seqs_per_iter = [[1, 8, 73, 955, 16205], [1, 7, 67, 771, 13113]]
         for err_rate in [i / 10 for i in range(0, 11, 2)]:
             for direction, n_seqs in zip(list(Direction), seqs_per_iter):
+                # don't slice list later, when runs fast enough!
                 for i, n in enumerate(n_seqs[:-2]):
                     aset = AronsonSet('t', direction)
                     aset.generate_full(i, err_rate)

@@ -319,8 +319,8 @@ class AronsonSet:
         """
         return self.forward_generate(AronsonSequence(self.letter, [], self.direction))
 
-    # Currently infeasible from n > 4
-    def generate_full(self, n_iterations: int, error_rate: float = 0.):
+    # Currently infeasible from n >= 4
+    def generate_full(self, n_iterations: int, error_rate: float = 0.01):
         """
         Exhaustive generation of all Aronson sequences up to given length
         :param error_rate: degree of precision, with 0. corresponding to no error, 1. to complete
@@ -355,7 +355,10 @@ class AronsonSet:
                 # Apply metric check only now
                 mean = sum(current_perm) / len(current_perm)
                 metric = max(x - mean for x in current_perm)
-                upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key]) + 1
+                upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key])
+                # if max_len >= 4 and error_rate <= 1e-3:
+                #     # misses a few sequences of length 4
+                #     upper_metric_bound += 1
                 if metric <= (1 - error_rate) * upper_metric_bound:
                     # no extreme outliers
                     yield current_perm.copy()

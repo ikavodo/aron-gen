@@ -3,11 +3,10 @@
 # n = 1: 8
 # n = 2: 73
 # n = 3: 955
+# n = 4: 16205
 
 # Direction.BACKWARD
 # n = 1: 7
 # n = 2: 67
 # n = 3: 771
-# third iteration is barely computable via brute force, whereas generate_from_rules() finds half of all sets
-
-# t is the twelfth
+# n = 4: 13113

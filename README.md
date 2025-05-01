@@ -22,23 +22,23 @@ Models self-referential sentences with:
 
 ```python
 # Create and validate sequence
-aronson_initial = [1, 4, 11] # first three terms in Aronson's sequence
 letter = 't'
+aronson_initial = [1, 4, 11] # first three terms in Aronson's sequence
 seq1 = AronsonSequence(letter, aronson_initial)
 print(seq1)  # "T is the first, fourth, eleventh letter in this sentence, not counting commas and spaces"
-print(seq1.is_correct())  # True
-print({seq1.get_ref(elem) for elem in aronson_initial}) # {Refer.BACKWARD}, meaning all elements refer before their positions
-print(seq.is_prefix_complete()) # True, as all occurrences of T up to max(aronson_initial) are accounted for
-print(seq.is_complete()) # False, the first n terms of the Aronson sequence are never complete (making the series infinite)
+seq1.is_correct()  # True
+{seq1.get_ref(elem) for elem in aronson_initial} # {Refer.BACKWARD}, meaning all elements refer before their positions
+seq.is_prefix_complete() # True, as all occurrences of T up to max(aronson_initial) are accounted for
+seq.is_complete() # False, the first n terms of the Aronson sequence are never complete (making the series infinite)
 seq1.append_elements([16]) # Next element in Aronson
 seq1.is_correct() # True
 
 aronson_reverse = [3, 4, 11]
 seq2 = AronsonSequence(letter, aronson_reverse, Direction.BACKWARD) # Reverse Aronson's sequence
 print(seq2)  # "Not counting commas and spaces, in this sentence backwards T is the eleventh, fourth, third letter"
-print(seq2.is_correct())  # True
-print(seq.is_prefix_complete()) # True
-seq1.append_elements([12]) # Wrong next element
+seq2.is_correct()  # True
+seq.is_prefix_complete() # True
+seq1.append_elements([16]) # Wrong element, maps to 'o'
 seq1.is_correct() # False
 
 ```

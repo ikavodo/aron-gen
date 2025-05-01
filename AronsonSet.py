@@ -324,7 +324,7 @@ class AronsonSet:
     def generate_full(self, n_iterations: int, error_rate: float = 0.):
         """
         Exhaustive generation of all Aronson sequences up to given length
-        :param error_rate:
+        :param error_rate: degree of precision, with 0. corresponding to no error, 1. to complete
         :param n_iterations: max length of generated sequences
         :return: None
         """

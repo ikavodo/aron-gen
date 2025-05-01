@@ -125,3 +125,8 @@ Run tests with:
 ```bash
 python -m unittest test_AronsonSet.py test_AronsonSequence.py
 ```
+For running an optional, slower test regarding performance benchmarks run the following
+```bash
+RUN_OPTIONAL_TEST=True python -m unittest test_AronsonSet.py test_AronsonSequence.py
+```
+

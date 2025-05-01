@@ -31,7 +31,8 @@ print(seq.is_complete()) # False, the first n terms of the Aronson sequence are 
 seq1.append_elements([16]) # Next element in Aronson
 seq1.is_correct() # True
 
-seq2 = AronsonSequence(letter, [3, 4, 11], Direction.BACKWARD) # Reverse Aronson's sequence
+aronson_reverse = [3, 4, 11]
+seq2 = AronsonSequence(letter, aronson_reverse, Direction.BACKWARD) # Reverse Aronson's sequence
 print(seq2)  # "Not counting commas and spaces, in this sentence backwards T is the eleventh, fourth, third letter"
 print(seq2.is_correct())  # True
 print(seq.is_prefix_complete()) # True
@@ -50,10 +51,12 @@ Manages collections of valid sequences with:
 ```python
 # Generate and analyze sequences
 aset = AronsonSet('t', Direction.BACKWARD)
-seq1 = AronsonSequence('t', [1, 4, 11])
-seq2 = aset.generate_aronson(3) # generates AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
-print(aset.is_correct(seq2)) # True
-print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
+empty_seq = aset.peek() 
+print(empty_seq) # "T is the letter"
+seq1 = aset.generate_aronson(3) # generates AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
+print(aset.is_correct(seq1)) # True
+seq2 = AronsonSequence('t', [1, 4, 11])
+print(aset.is_correct(seq2)) # False, sequence is incorrect in set context
 ```
 
 ## Advanced Usage
@@ -62,7 +65,7 @@ print(aset.is_correct(seq1)) # False, sequence is incorrect in set context
 aset = AronsonSet('t', Direction.BACKWARD)
 aset.generate_full(2) # Exhaustive search
 print(len(aset)) # 67
-aset.generate_fast(3)  # Optimized continuation
+aset.generate_fast(3, forward_generate=True)  # Optimized continuation
 print(len(aset)) # 198
 ```
 
@@ -80,6 +83,18 @@ intersection_set = set1 & set2
 assert(intersection_set == AronsonSet('t')) # intersection is empty forward set
 difference_set = set1 - set2 
 assert(difference_set == set1) # sets are complementary
+```
+
+### Filter Operations
+```python
+# Combine sequence sets
+seq1 = AronsonSequence('t', [1, 4, 11])
+aset = AronsonSet.from_sequence(seq1)
+n_iters = 2
+aset.generate_full(n_iters)
+filtered = aset.filter_symmetric(n_iters)
+new_aset.filter_elements({new_aset.max}) # "T is the thirty-second, thirty-third letter in this sentence, not counting commas and spaces|,
+# "T is the thirty-third, thirty-second letter in this sentence, not counting commas and spaces"
 ```
 
 ## Installation

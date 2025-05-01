@@ -6,7 +6,7 @@ The  `AronsonSet` (collections of sequences) class constitutes a generalization 
 
 See [this](https://ikavodo.github.io/aronson-1/) for more details.
 
-[![Tests](https://img.shields.io/badge/tests-90%25%20coverage-green)](https://github.com/ikavodo/aronson-generator/actions)
+[![Tests](https://img.shields.io/badge/tests-90%25%20coverage-green)]
 
 ## Features
 
@@ -23,28 +23,29 @@ Models self-referential sentences with:
 aronson_initial = [1, 4, 11] # first three terms in Aronson's sequence
 letter = 't'
 seq1 = AronsonSequence(letter, aronson_initial)
-print(seq1)  # "T is the first, fourth, eleventh letter in this sentence..."
+print(seq1)  # "T is the first, fourth, eleventh letter in this sentence, not counting commas and spaces"
 print(seq1.is_correct())  # True
 print({seq1.get_ref(elem) for elem in aronson_initial}) # {Refer.BACKWARD}, meaning all elements refer before their positions
 print(seq.is_prefix_complete()) # True, as all occurrences of T up to max(aronson_initial) are accounted for
 print(seq.is_complete()) # False, the first n terms of the Aronson sequence are never complete (making the series infinite)
-
-seq2 = AronsonSequence(letter, aronson_initial[::-1])
-print(seq.is_permutation(seq2) # True
-print(seq2.is_correct())  # False, the eleventh index is not a T 
-print({seq1.get_refer_val(elem) for elem in aronson_initial}) # {Refer.BACKWARD, Refer.SELF}, first element refers an index within its own ordinal representation
-print(seq.is_prefix_complete()) # False
-
 seq1.append_elements([16]) # Next element in Aronson
 seq1.is_correct() # True
+
+seq2 = AronsonSequence(letter, [3, 4, 11], Direction.BACKWARD) # Reverse Aronson's sequence
+print(seq2)  # "Not counting commas and spaces, in this sentence backwards T is the eleventh, fourth, third letter"
+print(seq2.is_correct())  # True
+print(seq.is_prefix_complete()) # True
+seq1.append_elements([12]) # Wrong next element
+seq1.is_correct() # False
+
 ```
 
 ### `AronsonSet` Class
 Manages collections of valid sequences with:
 
-- Multiple generation strategies (brute-force/rule-based)
+- Multiple generation strategies (pruned brute-force/fast rule-based)
 - Set operations (union/intersection/difference)
-- Performance-optimized generate_fast() method
+- Filter operations (by element/reference/symmetry)
 
 ```python
 # Generate and analyze sequences

@@ -109,7 +109,7 @@ filtered.filter_elements({filtered.max})
 ## Installation
 ```bash
 git clone https://github.com/ikavodo/aronson-generator.git
-cd aronson
+cd aronson-generator
 pip install -r requirements.txt  # Requires num2words
 ```
 

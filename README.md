@@ -56,11 +56,11 @@ aset1 = AronsonSet('t', Direction.BACKWARD)
 empty_seq = aset1.peek() 
 print(empty_seq) # "T is the letter"
 seq1 = aset1.generate_aronson(3).pop() # AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
-print(aset1.is_correct(seq1)) # True
+aset1.is_correct(seq1) # True
 aset2 = AronsonSet('t') # Forward
 seq2 = aset2.generate_aronson(3).pop()
-print(aset1.is_correct(seq2)) # False, sequence is incorrect in set context
-print(aset2.is_correct(seq1)) # False
+aset1.is_correct(seq2) # False, sequence is incorrect in set context
+aset2.is_correct(seq1) # False, same
 ```
 
 ## Advanced Usage
@@ -68,9 +68,9 @@ print(aset2.is_correct(seq1)) # False
 ```python
 aset = AronsonSet('t', Direction.BACKWARD)
 aset.generate_full(2) # Exhaustive search
-print(len(aset)) # 67
+len(aset) # 67
 aset.generate_fast(3, forward_generate=True)  # Optimized continuation
-print(len(aset)) # 198
+len(aset) # 198
 ```
 
 ### Set Operations
@@ -98,9 +98,9 @@ n_iters = 2
 aset.generate_full(n_iters)
 filtered = aset.filter_symmetric(n_iters)
 new_aset.filter_elements({new_aset.max})
-[print(seq) for seq in new_aset if not seq.is_empty()]
-# "T is the thirty-second, thirty-third letter in this sentence, not counting commas and spaces",
-# "T is the thirty-third, thirty-second letter in this sentence, not counting commas and spaces"
+[seq for seq in new_aset if not seq.is_empty()]
+# ["T is the thirty-second, thirty-third letter in this sentence, not counting commas and spaces",
+# "T is the thirty-third, thirty-second letter in this sentence, not counting commas and spaces"]
 ```
 
 ## Installation

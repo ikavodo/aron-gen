@@ -97,8 +97,8 @@ aset = AronsonSet.from_sequence(seq1)
 n_iters = 2
 aset.generate_full(n_iters)
 filtered = aset.filter_symmetric(n_iters)
-new_aset.filter_elements({new_aset.max})
-[seq for seq in new_aset if not seq.is_empty()]
+filtered.filter_elements({filtered.max})
+[seq for seq in filtered if not seq.is_empty()]
 # ["T is the thirty-second, thirty-third letter in this sentence, not counting commas and spaces",
 # "T is the thirty-third, thirty-second letter in this sentence, not counting commas and spaces"]
 ```

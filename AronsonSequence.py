@@ -144,7 +144,7 @@ class AronsonSequence:
         return f"{self.letter + PREFIX}{', '.join(self.n2w(i, stripped=False) for i in elem_ord)}{SUFFIX}".replace(
             "  ", " ")
 
-    def _get_refer_val(self, elem):
+    def _set_refer_val(self, elem):
         """
         Determines the referral type for a specific index in the sequence.
 
@@ -172,7 +172,7 @@ class AronsonSequence:
 
         :return: A dictionary mapping each element to its referral type.
         """
-        return {x: self._get_refer_val(x) for x in self.elements}
+        return {x: self._set_refer_val(x) for x in self.elements}
 
     def _update_refer_dict(self, new_elements):
         """
@@ -181,7 +181,7 @@ class AronsonSequence:
         :param new_elements: A list of new elements to add to the dictionary.
         """
         self.refer_dict.update({
-            x: self._get_refer_val(x) for x in new_elements
+            x: self._set_refer_val(x) for x in new_elements
         })
 
     def has_forward_ref(self):
@@ -318,7 +318,7 @@ class AronsonSequence:
         idx_range, _ = self.refer_dict[elem]
         return idx_range
 
-    def get_ref(self, elem):
+    def get_reference(self, elem):
         """
         given an element, if it is within the sequence, return the reference type
         :param elem: to be checked

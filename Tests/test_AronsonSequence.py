@@ -161,10 +161,6 @@ class AronsonSequenceTests(unittest.TestCase):
             with self.subTest(seq=seq):
                 self.assertEqual(seq.is_empty(), expected)
 
-    def test_get_occurrences(self):
-        # Too lazy right now.
-        pass
-
     def test_is_correct(self):
         test_cases = [
             # all of these are correct sentences
@@ -328,13 +324,13 @@ class AronsonSequenceTests(unittest.TestCase):
         seq.flip_direction()
         self.assertEqual(seq.get_range(1), range(LEN_SUFFIX, len(seq.get_sentence()) - LEN_PREFIX))
 
-    def test_get_ref(self):
+    def test_get_reference(self):
         for direction in Direction:
             seq = AronsonSequence('t', [], direction)
             with self.assertRaises(ValueError):
-                seq.get_ref(1)
+                seq.get_reference(1)
             seq.append_elements([1])
-            self.assertEqual(seq.get_ref(1), Refer.BACKWARD)
+            self.assertEqual(seq.get_reference(1), Refer.BACKWARD)
 
     def test_cpy(self):
         seq = AronsonSequence('t', [1, 2], Direction.FORWARD)

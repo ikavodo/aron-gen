@@ -437,7 +437,7 @@ class AronsonSetTests(unittest.TestCase):
         for initial, swapped in test_cases:
             for direction in Direction:
                 aset = AronsonSet('t', direction)
-                aset.generate_fast(2)
+                aset.generate_fast(2, forward_generate=True)
                 for elems in [initial, swapped]:
                     # Check original and swapped versions exist in second iteration
                     seq = AronsonSequence('t', elems, direction)
@@ -446,7 +446,7 @@ class AronsonSetTests(unittest.TestCase):
 
         # Test subset operations
         aset = AronsonSet('t')
-        aset.generate_fast(3, forward_generate=False)
+        aset.generate_fast(3)
 
         for seq in aset:
             if len(seq) > 1:
@@ -458,7 +458,7 @@ class AronsonSetTests(unittest.TestCase):
         # Test convergence detection
         with self.assertRaises(GenError):
             aset = AronsonSet('r')
-            aset.generate_fast(5, forward_generate=False)  # Should converge before 5 iterations
+            aset.generate_fast(5)  # Should converge before 5 iterations
 
     def test_generation_speed(self):
         """Verify generate_fast() is faster than generate_full() for equivalent iterations"""
@@ -718,13 +718,12 @@ class AronsonSetTests(unittest.TestCase):
             for i in range(n):
                 aset = AronsonSet('t', direction)
                 aset.generate_full(i)
-                new_aset = aset.filter_symmetric()
+                new_aset = aset.filter_symmetric(seq_len=i)
                 if i < 2:
-                    self.assertTrue(new_aset.get_seen_seqs() == aset.get_seen_seqs())
+                    self.assertEqual(new_aset.get_seen_seqs(), aset.get_seen_seqs())
                 else:
-                    # check set difference is not empty
-                    self.assertNotEqual(new_aset, AronsonSet('t', direction))
-                    self.assertNotEqual(new_aset, aset[i])
+                    [print(seq) for seq in new_aset.filter_elements({new_aset.max}) if not seq.is_empty()]
+                    self.assertNotEqual(new_aset.get_seen_seqs(), aset.get_seen_seqs())
 
     def test_discard(self):
         # these work for either direction

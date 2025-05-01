@@ -49,7 +49,7 @@ class GenError(Exception):
     """
         Custom exception raised when generating from the input sequence is impossible.
         :param message: The error message to be shown.
-        :param n_iters: Num of iterations
+        :param n: Num of iterations or num of elements, depending on error mode
         """
 
     def __init__(self, n, message="Generating failed", error_mode=ErrorMode.ITER_MODE):
@@ -389,7 +389,7 @@ class AronsonSet:
 
             self._update_iter(cur_seqs)
 
-    def generate_fast(self, n_iterations: int, forward_generate=True):
+    def generate_fast(self, n_iterations: int, forward_generate=False):
         """
         Optimized generation using swap/subset operations
         :param forward_generate: more expensive computationally
@@ -453,18 +453,19 @@ class AronsonSet:
             raise ValueError("input argument must be a set")
         return AronsonSet.from_set({seq for seq in self.seen_seqs if all(elem in seq for elem in elems)})
 
-    def filter_symmetric(self):
+    def filter_symmetric(self, seq_len=0):
         """
-        return all sequences in set for which all permutations are also in set
+        return all sequences for which all permutations are also in set
+        :param seq_len: to start filtering from
         :return: set of such sequences
         """
-        symm_set: set[AronsonSequence] = set()
+        sym_set: set[AronsonSequence] = set()
         for seq in self.seen_seqs:
             seq_perm = {AronsonSequence(self.letter, list(perm), self.direction) for perm in
                         permutations(seq, len(seq))}
-            if all(perm in self.seen_seqs for perm in seq_perm):
-                symm_set.update(seq_perm)
-        return AronsonSet.from_set(symm_set)
+            if all(perm in self.seen_seqs for perm in seq_perm) and len(seq) >= seq_len:
+                sym_set.update(seq_perm)
+        return AronsonSet.from_set(sym_set)
 
     # Buggy?
     def find_non_elements(self, n_iter=None):

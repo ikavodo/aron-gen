@@ -79,7 +79,7 @@ assert(union_set == AronsonSet.from_set({seq1, seq2})) # same as constructor fro
 intersection_set = set1 & set2 
 assert(intersection_set == AronsonSet('t')) # intersection is empty forward set
 difference_set = set1 - set2 
-assert(difference_set == set1) # sets are complementary
+assert(difference_set == set1) # sets are complementary (empty set considered trivial)
 ```
 
 ### Filter Operations

@@ -2,9 +2,9 @@
 
 A Python implementation of two classes representing self-referential sentences (`AronsonSequence`), and collections thereof (`AronsonSet`). 
 
-The prototype which inspired the class `AronsonSequence` is [Aronson's sequence](https://oeis.org/A005224), first coined by J. K. Aronson, and quoted by D. R. Hofstadter in his book "*Methamagical Themas*" (1983).
+The prototype which inspired the `AronsonSequence` class is [Aronson's sequence](https://oeis.org/A005224), first coined by J. K. Aronson, and quoted by D. R. Hofstadter in his book "*Methamagical Themas*" (1983). This class generalizes all sentences of the form "Ω is the X, Y, Z... letter", where Ω $\in$ Σ is a letter in the alphabet.
 
-The  `AronsonSet` (collections of sequences) class constitutes a generalization to all sentences "Ω is the X, Y, Z... letter", where Ω $\in$ Σ is a letter in the alphabet and the sentence is semantically correct (meaning X, Y, Z are ordinals which map to occurrences of the letter Ω in the sentence).  
+The  `AronsonSet` class constitutes a collection over `AronsonSequence` instances, where these are constrainted to be semantically correct (meaning ordinals X, Y, Z map to occurrences of the letter Ω in the sentence representation) with respect to the same letter and scanning direction (see relevant [Direction Enum](https://github.com/ikavodo/aronson-generator/blob/db61f7187a8771e340c30b485ad39cbf6864172a/AronsonSequence.py#L30) .  
 
 See [this](https://ikavodo.github.io/aronson-1/) for more details.
 

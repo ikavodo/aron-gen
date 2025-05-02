@@ -88,9 +88,9 @@ seq1 = AronsonSequence('t', [1, 4, 11])
 aset = AronsonSet.from_sequence(seq1)
 n_iters = 2
 aset.generate_full(n_iters)
-filtered = aset.filter_symmetric(n_iters)
-filtered.filter_elements({filtered.max})
-[seq for seq in filtered if not seq.is_empty()]
+filtered_symmetric = aset.filter_symmetric(n_iters)
+filtered_max = filtered_symmetric.filter_elements({filtered_symmetric.max})
+[seq for seq in filtered_max if not seq.is_empty()]
 # ["T is the thirty-second, thirty-third letter in this sentence, not counting commas and spaces",
 # "T is the thirty-third, thirty-second letter in this sentence, not counting commas and spaces"]
 ```

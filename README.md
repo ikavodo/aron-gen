@@ -73,7 +73,8 @@ seq2 = AronsonSequence('t', [10, 12])
 set1 = AronsonSet.from_sequence(seq1)
 set2 = AronsonSet.from_sequence(seq2) 
 
-union_set = set1 | set2 # overloaded set operators |, &, -
+# set operators |, &, -
+union_set = set1 | set2
 assert(union_set == AronsonSet.from_set({seq1, seq2})) # same as constructor from_set() 
 intersection_set = set1 & set2 
 assert(intersection_set == AronsonSet('t')) # intersection is empty forward set

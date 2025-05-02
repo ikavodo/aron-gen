@@ -43,7 +43,7 @@ Manages collections of valid sequences with:
 
 ```python
 # Generate and analyze sequences
-aset1 = AronsonSet('t', Direction.BACKWARD)
+aset1 = AronsonSet('t', Direction.BACKWARD) # Backward
 empty_seq = aset1.peek() 
 print(empty_seq) # "T is the letter"
 seq1 = aset1.generate_aronson(3).pop() # AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)

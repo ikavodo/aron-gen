@@ -6,7 +6,7 @@ The prototype which inspired the `AronsonSequence` class is [Aronson's sequence]
 
 The  `AronsonSet` class constitutes a collection over `AronsonSequence` instances, where these are constrainted to be semantically correct (meaning ordinals X, Y, Z map to occurrences of the letter Ω in the sentence representation) with respect to the same letter Ω and scanning direction (left-to-right or right-to-left).  
 
-See [this](https://ikavodo.github.io/aronson-1/) for more details.
+See [this blogpost](https://ikavodo.github.io/aronson-1/) for more details.
 
 [![Tests](https://img.shields.io/badge/tests-98%25%20coverage-green)]
 

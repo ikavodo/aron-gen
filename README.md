@@ -32,15 +32,6 @@ seq.is_prefix_complete() # True
 seq.is_complete() # False
 seq1.append_elements([16]) # Next element in Aronson
 seq1.is_correct() # True
-
-aronson_reverse = [3, 4, 11]
-seq2 = AronsonSequence(letter, aronson_reverse, Direction.BACKWARD) # Reverse Aronson's sequence
-print(seq2)  # "Not counting commas and spaces, in this sentence backwards T is the eleventh, fourth, third letter"
-seq2.is_correct()  # True
-seq.is_prefix_complete() # True
-seq1.append_elements([16]) # Wrong element
-seq1.is_correct() # False
-
 ```
 
 ### `AronsonSet` Class

@@ -60,7 +60,7 @@ aset.generate_full(2) # Exhaustive search
 len(aset) # 67
 aset_cpy = aset.copy()
 aset.generate_fast(3, forward_generate=True)  # Optimized continuation
-len(aset) # 198
+len(aset) # 198 (of 955)
 aset_cpy.generate_full(3, error_rate = 0.25) # Find at least 75% of all correct sequences
 len(aset_cpy) # 843 (of 955)
 ```

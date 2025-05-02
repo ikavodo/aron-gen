@@ -1,6 +1,7 @@
 # Aronson Sequence Generator
 
 [![Tests](https://img.shields.io/badge/tests-98%25%20coverage-green)]
+
 A Python implementation of two classes representing self-referential sentences (`AronsonSequence`), and collections thereof (`AronsonSet`). 
 
 The prototype which inspired the `AronsonSequence` class is [Aronson's sequence](https://oeis.org/A005224), first coined by J. K. Aronson, and quoted by D. R. Hofstadter in his book "*Methamagical Themas*" (1983). This class generalizes all sentences of the form "Ω is the X, Y, Z... letter", where Ω $\in$ Σ is a letter in the alphabet.

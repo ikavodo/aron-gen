@@ -450,7 +450,8 @@ class AronsonSet:
         """
         if not isinstance(elems, set):
             raise ValueError("input argument must be a set")
-        return AronsonSet.from_set({seq for seq in self.seen_seqs if all(elem in seq for elem in elems)})
+        filtered = {seq for seq in self.seen_seqs if all(elem in seq for elem in elems)}
+        return AronsonSet.from_set(filtered)
 
     def filter_symmetric(self, seq_len=0):
         """
@@ -458,14 +459,14 @@ class AronsonSet:
         :param seq_len: to start filtering from
         :return: set of such sequences
         """
-        sym_set: set[AronsonSequence] = set()
+        filtered: set[AronsonSequence] = set()
         for seq in self.seen_seqs:
             seq_perm = {AronsonSequence(self.letter, list(perm), self.direction) for perm in
                         permutations(seq, len(seq))}
             if all(perm in self.seen_seqs for perm in seq_perm) and len(seq) >= seq_len:
                 # have control over which length symmetric sequences to filter out
-                sym_set.update(seq_perm)
-        return AronsonSet.from_set(sym_set)
+                filtered.update(seq_perm)
+        return AronsonSet.from_set(filtered)
 
     def find_non_elements(self, n_iter=None):
         """
@@ -502,19 +503,23 @@ class AronsonSet:
         if not isinstance(refs, set):
             raise ValueError("input argument must be a set")
         # val is (range[], Refer.Type) for val in seq.get_refer_dict().values
-        seqs_set = {seq for seq in self.seen_seqs if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})}
-        return AronsonSet.from_set(seqs_set)
+        filtered = {seq for seq in self.seen_seqs if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})}
+        return AronsonSet.from_set(filtered)
 
     def filter_monotonic(self, ascending=True):
-        # check in test that taking ascending and then descending gives only up to length 1!
-        seqs_set = set()
+        """
+        Filter out of instance only those sets which are monotonic with respect to ascending/descending order
+        :param ascending: True by default
+        :return: monotonic sets
+        """
+        filtered = set()
         condition = 1 if ascending else -1
         for seq in self.seen_seqs:
-            tup = seq.is_monotonic()
-            # first value must be True, take sequence in either case if None
-            if tup[0] and (tup[1] is None or tup[1] == condition):
-                seqs_set.add(seq)
-        return AronsonSet.from_set(seqs_set)
+            tuple_mono = seq.is_monotonic()
+            # first value must be True, take sequence in both ascending/descending cases if None
+            if tuple_mono[0] and (tuple_mono[1] is None or tuple_mono[1] == condition):
+                filtered.add(seq)
+        return AronsonSet.from_set(filtered)
 
     # Utility methods
     def copy(self):

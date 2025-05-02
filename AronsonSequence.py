@@ -1,3 +1,4 @@
+import operator
 from collections import defaultdict
 from enum import Enum
 from num2words import num2words
@@ -255,10 +256,10 @@ class AronsonSequence:
             # trivially
             return True, None
         # sign of monotonicity
-        op_dict = {int.__lt__: -1, int.__gt__: 1}
-        for op in op_dict.keys():
-            if all(op(elem2, elem1) for elem1, elem2 in zip(self.elements, self.elements[1:])):
-                return True, op_dict[op]
+        op_dict = {operator.lt: 1, operator.gt: -1}
+        for op, direction in op_dict.items():
+            if all(op(a, b) for a, b in zip(self.elements, self.elements[1:])):
+                return True, direction
         return False, None
 
     # setters

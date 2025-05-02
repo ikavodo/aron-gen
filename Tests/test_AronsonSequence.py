@@ -1,4 +1,6 @@
 import unittest
+from itertools import permutations
+
 from num2words import num2words
 from AronsonSequence import AronsonSequence, PREFIX, SUFFIX, Refer, Direction, REPR_FORWARD, \
     REPR_BACKWARD, LEN_PREFIX, LEN_SUFFIX
@@ -433,6 +435,13 @@ class AronsonSequenceTests(unittest.TestCase):
             seq1.append_elements([3])
             # no longer permutation, but rather permuted subset
             self.assertFalse(AronsonSequence.is_permutation(seq1, seq2))
+
+    def test_is_monotonic(self):
+        all_elements = [([1], True), ([1, 2], True), ([1, 2, 3], False)]
+        for elements, expected in all_elements:
+            perms = {AronsonSequence('t', list(perm)) for perm in permutations(elements, len(elements))}
+            # is_monotonic() must be of form (True, X), in third case some permutation is non-monotonic
+            self.assertEqual(all(any(perm.is_monotonic()) for perm in perms), expected)
 
     if __name__ == '__main__':
         unittest.main()

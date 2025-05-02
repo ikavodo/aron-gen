@@ -724,7 +724,6 @@ class AronsonSetTests(unittest.TestCase):
                 if i < 2:
                     self.assertEqual(new_aset.get_seen_seqs(), aset.get_seen_seqs())
                 else:
-                    [print(seq) for seq in new_aset.filter_elements({new_aset.max}) if not seq.is_empty()]
                     self.assertNotEqual(new_aset.get_seen_seqs(), aset.get_seen_seqs())
 
     def test_discard(self):
@@ -781,6 +780,26 @@ class AronsonSetTests(unittest.TestCase):
             for item in d_emp.items():
                 self.assertIn(item, d_singleton.items())
             self.assertEqual(d_singleton[1], len(elems))
+
+    def test_filter_monotonic(self):
+        for direction in Direction:
+            for ascending in (True, False):
+                for i in range(3):
+                    aset = AronsonSet('t', direction)
+                    aset_cpy = aset.copy()
+                    aset.generate_full(i)
+                    monotonic_seqs = aset.filter_monotonic(ascending=ascending)
+                    if i < 2:
+                        # All are trivially monotonic w.r.t. ascending
+                        self.assertEqual(monotonic_seqs.get_seen_seqs(), aset.get_seen_seqs())
+                    else:
+                        # Not true anymore
+                        self.assertNotEqual(monotonic_seqs.get_seen_seqs(), aset.get_seen_seqs())
+                        # test that filtering twice with conflicting directions gives only trivially monotonic seqs
+                        aset_cpy.generate_full(1)
+                        trivially_monotonic = monotonic_seqs.filter_monotonic(ascending=not ascending)
+                        self.assertEqual(trivially_monotonic.get_seen_seqs(), aset_cpy.get_seen_seqs())
+
 
 
 if __name__ == '__main__':

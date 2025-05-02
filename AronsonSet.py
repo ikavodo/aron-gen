@@ -505,6 +505,17 @@ class AronsonSet:
         seqs_set = {seq for seq in self.seen_seqs if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})}
         return AronsonSet.from_set(seqs_set)
 
+    def filter_monotonic(self, ascending=True):
+        # check in test that taking ascending and then descending gives only up to length 1!
+        seqs_set = set()
+        condition = 1 if ascending else -1
+        for seq in self.seen_seqs:
+            tup = seq.is_monotonic()
+            # first value must be True, take sequence in either case if None
+            if tup[0] and (tup[1] is None or tup[1] == condition):
+                seqs_set.add(seq)
+        return AronsonSet.from_set(seqs_set)
+
     # Utility methods
     def copy(self):
         """ shallow copy for new instance"""

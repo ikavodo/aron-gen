@@ -244,6 +244,23 @@ class AronsonSequence:
         """
         return all(ind in self.get_occurrences() for ind in self.elements)
 
+    def is_monotonic(self):
+        """
+        Check if sequence is monotonically increasing or decreasing.
+
+        :return: (True, X) if the sequence is monotonic, else (False, None).
+        More specifically: X = +/- 1 depending on direction
+        """
+        if len(self.elements) < 2:
+            # trivially
+            return True, None
+        # sign of monotonicity
+        op_dict = {int.__lt__: -1, int.__gt__: 1}
+        for op in op_dict.keys():
+            if all(op(elem2, elem1) for elem1, elem2 in zip(self.elements, self.elements[1:])):
+                return True, op_dict[op]
+        return False, None
+
     # setters
     def set_elements(self, new_elements: list[int] = None, append=False):
         """

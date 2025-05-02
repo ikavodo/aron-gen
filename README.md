@@ -49,7 +49,7 @@ print(empty_seq) # "T is the letter"
 seq1 = aset1.generate_aronson(3).pop() # AronsonSequence('t', [3, 4, 11], Direction.BACKWARD)
 aset1.is_correct(seq1) # True
 aset2 = AronsonSet('t') # Forward
-aset2.is_correct(seq1) # False, sequence is incorrect in set context
+aset2.is_correct(seq1) # False, sequence is incorrect w.r.t. set direction
 ```
 
 ## Advanced Usage

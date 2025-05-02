@@ -24,7 +24,7 @@ Models self-referential sentences with:
 # Create and validate sequence
 letter = 't'
 aronson_initial = [1, 4, 11] # first three terms in Aronson's sequence
-seq1 = AronsonSequence(letter, aronson_initial)
+seq1 = AronsonSequence(letter, aronson_initial) # Forward
 print(seq1)  # "T is the first, fourth, eleventh letter in this sentence, not counting commas and spaces"
 seq1.is_correct()  # True
 {seq1.get_ref(elem) for elem in aronson_initial} # {Refer.BACKWARD}

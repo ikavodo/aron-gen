@@ -85,8 +85,7 @@ assert(difference_set == set1) # sets are complementary
 ### Filter Operations
 ```python
 # Combine sequence sets
-seq1 = AronsonSequence('t', [1, 4, 11])
-aset = AronsonSet.from_sequence(seq1)
+aset = AronsonSet('t')
 n_iters = 2
 aset.generate_full(n_iters)
 filter1 = aset.filter_symmetric(n_iters) # get sequences for which all permutations also in set

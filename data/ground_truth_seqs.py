@@ -1,4 +1,4 @@
-# Elements corresponding to all Aronson sequences of length up to 3 (not including empty sequence)
+# Elements corresponding to all Aronson sequences of length up to 3
 forward_elems = [
     [1, 24, 28],
     [10, 15, 37],

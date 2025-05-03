@@ -782,4 +782,5 @@ class AronsonSet:
         ))
 
     def __repr__(self):
+        """ repr() operator, prints repr() method of sequences by iteration (starting with empty sequence)"""
         return "\n".join(repr(seq) for i in sorted(self.iter_dict) for seq in self.iter_dict[i])

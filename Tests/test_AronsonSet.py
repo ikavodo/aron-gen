@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import unittest
 import time
 from collections import defaultdict
@@ -800,6 +801,20 @@ class AronsonSetTests(unittest.TestCase):
                         trivially_monotonic = monotonic_seqs.filter_monotonic(ascending=not ascending)
                         self.assertEqual(trivially_monotonic.get_seen_seqs(), aset_cpy.get_seen_seqs())
 
+    def test_repr(self):
+        for direction in Direction:
+            empty_seq = AronsonSequence('t', [], direction)
+            aset = AronsonSet('t', direction)
+            aset.generate_full(1)
+            repr_aset = repr(aset)
+            delim = repr_aset.find("\n")
+            # first sequence in repr is the empty
+            self.assertEqual(repr_aset[:delim], repr(empty_seq))
+            pattern = re.compile(r"\bT is the (\S+) letter")
+            next = repr_aset[delim + 1:].find("\n")
+            # check that second sentence has non-empty ordinal
+            match = pattern.search(repr_aset[delim + 1:next])
+            self.assertTrue(match)
 
 
 if __name__ == '__main__':

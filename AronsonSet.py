@@ -127,6 +127,33 @@ class AronsonSet:
         # Union over singleton instances, see __or__() method
         return reduce(lambda a, b: a | b, sets)
 
+    @classmethod
+    def from_dict(cls, iter_dict: dict[int: set[AronsonSequence]] = None):
+        """
+        constructor from set of AronsonSequence instances.
+        :param iter_dict: dictionary
+        :return: class instance
+        """
+        if not iter_dict or iter_dict is None:
+            # default
+            return AronsonSet('t')
+
+        # Need to look into dictionary for correct set construction, is non-empty
+        _, seqs = next((key, value) for key, value in iter_dict.items() if value)
+
+        seq = seqs.pop()
+        # dict is mutable
+        seqs.add(seq)
+        new_instance = AronsonSet(seq.letter, seq.direction)
+        emp_seq = AronsonSequence(seq.letter, [], seq.direction)
+        if not any(emp_seq in val for val in iter_dict.values()):
+            # no side effects
+            iter_dict = iter_dict.copy()
+            iter_dict[0].add(emp_seq)
+        # does error checking, raising ValueError if some discrepancy
+        new_instance.set_iter_dict(iter_dict)
+        return new_instance
+
     def is_correct(self, seq: AronsonSequence):
         """
         Is given sequence correct with regard to class instance
@@ -440,7 +467,7 @@ class AronsonSet:
             results.update(self.backward_generate(1, seq))
         return results
 
-    # getters
+    # Filters always include the empty_set (change this at some point if necessary).
     def filter_elements(self, elems):
         """
         return all seen sequences containing elements
@@ -450,8 +477,10 @@ class AronsonSet:
         """
         if not isinstance(elems, set):
             raise ValueError("input argument must be a set")
-        filtered = {seq for seq in self.seen_seqs if all(elem in seq for elem in elems)}
-        return AronsonSet.from_set(filtered)
+        # retain iteration information
+        filtered = {n_iter: {seq for seq in seqs if all(elem in seq for elem in elems)} for n_iter, seqs in
+                    self.iter_dict.items()}
+        return AronsonSet.from_dict(filtered)
 
     def filter_symmetric(self, seq_len=0):
         """
@@ -459,14 +488,15 @@ class AronsonSet:
         :param seq_len: to start filtering from
         :return: set of such sequences
         """
-        filtered: set[AronsonSequence] = set()
-        for seq in self.seen_seqs:
-            seq_perm = {AronsonSequence(self.letter, list(perm), self.direction) for perm in
-                        permutations(seq, len(seq))}
-            if all(perm in self.seen_seqs for perm in seq_perm) and len(seq) >= seq_len:
-                # have control over which length symmetric sequences to filter out
-                filtered.update(seq_perm)
-        return AronsonSet.from_set(filtered)
+        filtered: dict[int: set[AronsonSequence]] = defaultdict(set[AronsonSequence])
+        for n_iter, seqs in self.iter_dict.items():
+            for seq in seqs:
+                seq_perm = {AronsonSequence(self.letter, list(perm), self.direction) for perm in
+                            permutations(seq, len(seq))}
+                if all(perm in self.seen_seqs for perm in seq_perm) and len(seq) >= seq_len:
+                    # Perhaps not all permutations generated in same iterations. Heavier computation...
+                    filtered[n_iter].add(seq)
+        return AronsonSet.from_dict(filtered)
 
     def find_non_elements(self, n_iter=None):
         """
@@ -502,9 +532,11 @@ class AronsonSet:
         """
         if not isinstance(refs, set):
             raise ValueError("input argument must be a set")
-        # val is (range[], Refer.Type) for val in seq.get_refer_dict().values
-        filtered = {seq for seq in self.seen_seqs if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})}
-        return AronsonSet.from_set(filtered)
+        filtered: dict[int: set[AronsonSequence]] = defaultdict(set[AronsonSequence])
+        for n_iter, seqs in self.iter_dict.items():
+            # val is (range[], Refer.Type) for val in seq.get_refer_dict().values
+            filtered[n_iter] = {seq for seq in seqs if refs.issubset({ref[1] for ref in seq.get_refer_dict().values()})}
+        return AronsonSet.from_dict(filtered)
 
     def filter_monotonic(self, ascending=True):
         """
@@ -540,8 +572,8 @@ class AronsonSet:
         field_set = {(s.get_letter(), s.get_direction()) for sets in new_dict.values() for s in sets}
 
         # Verify all sequences share the same letter and direction
-        if len(field_set) > 1:
-            raise ValueError("All sequences must have the same letter and direction")
+        if len(field_set) > 1 or field_set.pop() != (self.display_letter, self.direction):
+            raise ValueError("All sequences must have letter and direction of current set")
 
         self.iter_dict.clear()
         self.iter_dict.update(new_dict)

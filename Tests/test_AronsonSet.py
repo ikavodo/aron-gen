@@ -195,9 +195,9 @@ class AronsonSetTests(unittest.TestCase):
         # does nothing
         self.assertEqual(aset, aset_cpy)
 
-        # invalid case
+        # invalid cases
         invalid_set = empty_set.copy()
-        invalid_set.update({AronsonSequence('t', [], Direction.BACKWARD), AronsonSequence('j')})
+        invalid_set.update({AronsonSequence('t', [], Direction.BACKWARD)})
         invalid_dict = {0: invalid_set}
         with self.assertRaises(ValueError):
             aset_cpy.set_iter_dict(invalid_dict)
@@ -633,10 +633,10 @@ class AronsonSetTests(unittest.TestCase):
         for elems, direction in zip(all_elems, list(Direction)):
             aset = AronsonSet('t', direction)
             aset.generate_full(1)
-            for elem, ref in zip(elems, list(Refer)):
+            for elems, ref in zip(elems, list(Refer)):
                 filtered = aset.filter_refs({ref})
-                self.assertTrue(len(filtered) >= 2)
-                for e in elem:
+                self.assertTrue(len(filtered) > len(elems))
+                for e in elems:
                     self.assertIn(AronsonSequence('t', [e], direction), filtered)
 
     def test_getitem(self):
@@ -810,11 +810,33 @@ class AronsonSetTests(unittest.TestCase):
             delim = repr_aset.find("\n")
             # first sequence in repr is the empty
             self.assertEqual(repr_aset[:delim], repr(empty_seq))
+            repr_aset = repr_aset[delim + 1:]
             pattern = re.compile(r"\bT is the (\S+) letter")
-            next = repr_aset[delim + 1:].find("\n")
+            next = repr_aset.find("\n")
             # check that second sentence has non-empty ordinal
-            match = pattern.search(repr_aset[delim + 1:next])
+            match = pattern.search(repr_aset[:next])
             self.assertTrue(match)
+
+    def test_from_dict(self):
+        # does nothing
+        empty_set = AronsonSet.from_dict()
+        self.assertEqual(empty_set, AronsonSet.from_set())
+        self.assertEqual(empty_set, AronsonSet.from_sequence())
+        emp_seq = AronsonSequence('t', [], Direction.BACKWARD)
+        emp_dict = {0: {emp_seq}}
+        self.assertEqual(AronsonSet.from_dict(emp_dict), AronsonSet.from_sequence(emp_seq))
+
+        # don't allow illegal dictionary
+        emp_dict[0].add(AronsonSequence('t'))
+        with self.assertRaises(ValueError):
+            AronsonSet.from_dict(emp_dict)
+
+        # check generating from dict retains iterations
+        empty_set.generate_full(1)
+        new_set = AronsonSet.from_dict(empty_set.get_iter_dict())
+        for n_iter in new_set.get_iter_dict():
+            # compare iteration sets
+            self.assertEqual(new_set[n_iter], empty_set[n_iter])
 
 
 if __name__ == '__main__':

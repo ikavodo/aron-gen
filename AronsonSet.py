@@ -575,11 +575,8 @@ class AronsonSet:
         if len(field_set) > 1 or field_set.pop() != (self.display_letter, self.direction):
             raise ValueError("All sequences must have letter and direction of current set")
 
-        self.iter_dict.clear()
-        self.iter_dict.update(new_dict)
-        self.seen_seqs.clear()
-        for s in new_dict.values():
-            self.seen_seqs.update(s)
+        self.iter_dict = new_dict
+        self.seen_seqs = set(seq for seqs in new_dict.values() for seq in seqs)
         self.cur_iter = max(new_dict.keys())
 
     def flip_direction(self):

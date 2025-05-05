@@ -471,7 +471,8 @@ class AronsonSetTests(unittest.TestCase):
         iterations = 3
         time_dict = defaultdict(list)
         initial_error = .25
-        errors = (initial_error, 3 * initial_error)
+        ratio = 3
+        errors = (initial_error, ratio * initial_error)
         for direction in Direction:
             for error in errors:
                 aset = AronsonSet('t', direction)
@@ -480,7 +481,6 @@ class AronsonSetTests(unittest.TestCase):
                 time_dict[direction].append(time.perf_counter() - start_time)
 
         speedups = [max(time_dict[direction]) / min(time_dict[direction]) for direction in Direction]
-        ratio = errors[1] / errors[0]
         # ratio of runtime should be at least as large as ratio of errors in one direction
         self.assertTrue(max(speedups) >= (ratio - 0.5), f"Insufficient speedup: {speedups}")
 

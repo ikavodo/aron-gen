@@ -84,7 +84,7 @@ assert(difference_set == set1) # sets are complementary
 
 ### Filter Operations
 ```python
-# Combine sequence sets
+# Extract AronsonSequence instances from an AronsonSet instance via filtering
 aset = AronsonSet('t')
 n_iters = 2
 aset.generate_full(n_iters)

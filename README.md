@@ -75,7 +75,7 @@ set2 = AronsonSet.from_sequence(seq2)
 
 # set operators |, &, -
 union_set = set1 | set2
-assert(union_set == AronsonSet.from_set({seq1, seq2})) # same as constructor from_set() 
+assert(union_set == AronsonSet.from_set({seq1, seq2})) # same as from_set() constructor 
 intersection_set = set1 & set2 
 assert(intersection_set == AronsonSet('t')) # intersection is empty forward set
 difference_set = set1 - set2 

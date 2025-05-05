@@ -200,11 +200,58 @@ class AronsonSequenceTests(unittest.TestCase):
         self.assertEqual(seq, empty)
 
     def test_add(self):
+
         empty = AronsonSequence('t')
         self.assertEqual(empty + empty, empty)
-        seq1 = AronsonSequence('t', [1], Direction.FORWARD)
-        seq2 = AronsonSequence('t', [4], Direction.FORWARD)
-        self.assertEqual(seq1 + seq2, AronsonSequence('t', [1, 4], Direction.FORWARD))
+
+        # mismatched letter
+        with self.assertRaises(ValueError):
+            _ = empty + AronsonSequence('x', [2])
+
+        # mismatched direction
+        with self.assertRaises(ValueError):
+            _ = empty + AronsonSequence('t', [2], Direction.BACKWARD)
+
+        # invalid element (e.g., 0)
+        with self.assertRaises(ValueError):
+            _ = empty + [0, 2]
+
+        # good construction
+        seq1 = AronsonSequence('t', [1])
+        seq2 = AronsonSequence('t', [4])
+        expected = AronsonSequence('t', [1, 4])
+        self.assertEqual(seq1 + seq2, expected)
+
+        # Test adding int
+        self.assertEqual(seq1 + 5, AronsonSequence('t', [1, 5]))
+
+        # Test adding list of ints
+        self.assertEqual(seq1 + [6, 7], AronsonSequence('t', [1, 6, 7]))
+
+    def test_iadd(self):
+        emp_seq = AronsonSequence('t')
+        seq = AronsonSequence('t', [2])
+        emp_seq += seq
+        self.assertEqual(emp_seq, seq)
+
+        # mismatched letter
+        with self.assertRaises(ValueError):
+            seq += AronsonSequence('x', [2])
+
+        # mismatched direction
+        with self.assertRaises(ValueError):
+            seq += AronsonSequence('t', [2], Direction.BACKWARD)
+
+        # invalid element in list
+        with self.assertRaises(ValueError):
+            seq += [3, 0]
+
+        seq += 3
+        seq2 = AronsonSequence('t', [2, 3])
+        self.assertEqual(seq, seq2)
+        elems = [4, 5]
+        seq += elems
+        self.assertEqual(seq, seq2 + AronsonSequence('t', elems))
 
     def test_complete(self):
         test_cases = [
@@ -322,9 +369,10 @@ class AronsonSequenceTests(unittest.TestCase):
 
     def test_get_range(self):
         seq = AronsonSequence('t', [1], Direction.FORWARD)
-        self.assertEqual(seq.get_range(1), range(LEN_PREFIX, len(seq.get_sentence()) - LEN_SUFFIX))
+        r, _ = seq.get_reference(1)
+        self.assertEqual(r, range(LEN_PREFIX, len(seq.get_sentence()) - LEN_SUFFIX))
         seq.flip_direction()
-        self.assertEqual(seq.get_range(1), range(LEN_SUFFIX, len(seq.get_sentence()) - LEN_PREFIX))
+        self.assertEqual(r, range(LEN_SUFFIX, len(seq.get_sentence()) - LEN_PREFIX))
 
     def test_get_reference(self):
         for direction in Direction:
@@ -332,7 +380,8 @@ class AronsonSequenceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 seq.get_reference(1)
             seq.append_elements([1])
-            self.assertEqual(seq.get_reference(1), Refer.BACKWARD)
+            _, ref = seq.get_reference(1)
+            self.assertEqual(ref, Refer.BACKWARD)
 
     def test_cpy(self):
         seq = AronsonSequence('t', [1, 2], Direction.FORWARD)
@@ -367,7 +416,7 @@ class AronsonSequenceTests(unittest.TestCase):
         seq.set_elements([], append=False)
         self.assertEqual(list(seq), seq.get_elements())
         with self.assertRaises(IndexError):
-            var = seq[0]
+            _ = seq[0]
 
     def test_len(self):
         seq = AronsonSequence('x', [10, 20], Direction.FORWARD)

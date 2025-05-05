@@ -81,8 +81,7 @@ class AronsonSetTests(unittest.TestCase):
         # don't have same seen sets.
         self.assertNotEqual(aset_empty, AronsonSet.from_sequence(AronsonSequence('t', [1])))
         # different iter_dicts
-        fake_aset = AronsonSet.from_sequence(empty_seq)
-        fake_aset.set_iter_dict({i: {empty_seq} for i in range(2)})
+        fake_aset = AronsonSet.from_dict({i: {empty_seq} for i in range(2)})
         self.assertEqual(fake_aset.get_seen_seqs(), aset_empty.get_seen_seqs())
         self.assertNotEqual(aset_empty, fake_aset)
 
@@ -186,34 +185,6 @@ class AronsonSetTests(unittest.TestCase):
         aset = AronsonSet('t')
         for case in invalid_cases:
             self.assertFalse(aset.is_complete(case))
-
-    def test_set_iter_dict(self):
-        aset = AronsonSet('t')
-        aset_cpy = aset.copy()
-        empty_set = {AronsonSequence('t')}
-        aset_cpy.set_iter_dict({})
-        # does nothing
-        self.assertEqual(aset, aset_cpy)
-
-        # invalid cases
-        invalid_set = empty_set.copy()
-        invalid_set.update({AronsonSequence('t', [], Direction.BACKWARD)})
-        invalid_dict = {0: invalid_set}
-        with self.assertRaises(ValueError):
-            aset_cpy.set_iter_dict(invalid_dict)
-
-        valid_set = empty_set.copy()
-        valid_seq = AronsonSequence('t', [1])
-        valid_set.add(valid_seq)
-        valid_dict = {0: valid_set}
-        aset_cpy.set_iter_dict(valid_dict)
-        # are same
-        self.assertEqual(aset_cpy, AronsonSet.from_sequence(valid_seq))
-
-        # Check iters updated using dict with more than one iteration
-        more_iters_dict = {i: valid_set for i in range(2)}
-        aset_cpy.set_iter_dict(more_iters_dict)
-        self.assertTrue(aset_cpy.get_n_iterations() == max(more_iters_dict.keys()))
 
     def test_clear(self):
         empty_set = AronsonSet('t')
@@ -633,10 +604,10 @@ class AronsonSetTests(unittest.TestCase):
         for elems, direction in zip(all_elems, list(Direction)):
             aset = AronsonSet('t', direction)
             aset.generate_full(1)
-            for elems, ref in zip(elems, list(Refer)):
+            for elem, ref in zip(elems, list(Refer)):
                 filtered = aset.filter_refs({ref})
-                self.assertTrue(len(filtered) > len(elems))
-                for e in elems:
+                self.assertTrue(len(filtered) > len(elem))
+                for e in elem:
                     self.assertIn(AronsonSequence('t', [e], direction), filtered)
 
     def test_getitem(self):
@@ -701,11 +672,14 @@ class AronsonSetTests(unittest.TestCase):
         ground_truth = [22, 24]
         for direction, val in zip(Direction, ground_truth):
             aset = AronsonSet('t', direction)
+            aset_cpy = aset.copy()
             with self.assertRaises(ValueError):
-                print(aset.max)
+                _ = aset.max
             aset.generate_full(1)
             self.assertEqual(aset.max, val)
-
+            for i in range(1, 3):
+                aset_cpy.generate_fast(i)
+                self.assertTrue(aset_cpy.max >= val)
     def test_combined(self):
         n = 3
         for direction in Direction:
@@ -812,9 +786,9 @@ class AronsonSetTests(unittest.TestCase):
             self.assertEqual(repr_aset[:delim], repr(empty_seq))
             repr_aset = repr_aset[delim + 1:]
             pattern = re.compile(r"\bT is the (\S+) letter")
-            next = repr_aset.find("\n")
+            nxt = repr_aset.find("\n")
             # check that second sentence has non-empty ordinal
-            match = pattern.search(repr_aset[:next])
+            match = pattern.search(repr_aset[:nxt])
             self.assertTrue(match)
 
     def test_from_dict(self):
@@ -822,6 +796,11 @@ class AronsonSetTests(unittest.TestCase):
         empty_set = AronsonSet.from_dict()
         self.assertEqual(empty_set, AronsonSet.from_set())
         self.assertEqual(empty_set, AronsonSet.from_sequence())
+        # falsey dict:
+        false_dict = {i: set() for i in range(2)}
+        with self.assertRaises(ValueError):
+            AronsonSet.from_dict(false_dict)
+
         emp_seq = AronsonSequence('t', [], Direction.BACKWARD)
         emp_dict = {0: {emp_seq}}
         self.assertEqual(AronsonSet.from_dict(emp_dict), AronsonSet.from_sequence(emp_seq))

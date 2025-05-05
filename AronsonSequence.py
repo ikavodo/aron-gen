@@ -45,12 +45,9 @@ class AronsonSequence:
     """
     Represents an Aronson sequence, which is a sequence of elements with each element referring to an ordinal appearing
     within a generated sentence of form:
-    f"{letter} is the {ordinal(elements[0])}, {ordinal(elements[1])}... letter" if direction is Direction.FORWARD.
-    Otherwise:
-    f"{letter} is the {ordinal(elements[-1])}, {ordinal(elements[-2])}... letter".
     See https://ikavodo.github.io/aronson-1/ for more information
     """
-
+    # ordinal representation dictionary for memoization
     num2words_dict = defaultdict(tuple)
 
     @classmethod
@@ -85,7 +82,7 @@ class AronsonSequence:
 
         self.letter = letter.lower()
         self.direction = direction
-        # build strings (can be made a single method?)
+        # build internal fields relating to sentence representation
         self._update_sentence()
 
     @property
@@ -103,7 +100,6 @@ class AronsonSequence:
         Make sure direction is a Direction Enum Type
         :param direction: of sequence
         """
-        # Validate direction
         if not isinstance(direction, Direction):
             raise ValueError(f"Invalid direction value: {direction}. Must be a Direction.")
 
@@ -130,7 +126,6 @@ class AronsonSequence:
         """
         Updates the string representation of the sequence, its sanitized form, occurrence set,
         and optionally builds or updates the referral dictionary.
-
         :param elements: Optional iterable of new elements to update in refer_dict;
                          if None, rebuild refer_dict from scratch using self.elements.
         """
@@ -149,7 +144,6 @@ class AronsonSequence:
     def _build_sentence_repr(self):
         """
         Returns the human-readable string representation of the AronsonSequence.
-
         :return: The string representation of the sequence.
         """
         # reverse order if backwards
@@ -160,7 +154,6 @@ class AronsonSequence:
     def _set_refer_val(self, elem):
         """
         Determines the referral type for a specific index in the sequence.
-
         :param elem: The index of the element in the sequence.
         :return: pos: position of ordinal representation within string
                 ref: where element points to within the string compared to the position
@@ -176,22 +169,19 @@ class AronsonSequence:
             ref = Refer.SELF
         else:
             ref = Refer.FORWARD
-        # return position of ordinal within string representation as a tuple.
+        # return position of ordinal within string representation, and referral type as a tuple.
         return range(pos, end), ref
 
     def has_forward_ref(self):
         """
         Checks if there are any forward referring elements in the sequence.
-
         :return: True if there are forward referring elements, False otherwise.
         """
         return any(ref == Refer.FORWARD for _, ref in self.refer_dict.values())
 
-    # save occurrences during initialization
     def get_occurrences(self, idx=None):
         """
         Returns the 1-based positions of `self.letter` in the sentence, respecting direction.
-
         :return: A list of positions where the letter occurs.
         """
         return {i for i in self.occurrences if i <= idx} if idx is not None else self.occurrences
@@ -206,7 +196,6 @@ class AronsonSequence:
     def is_complete(self):
         """
         Checks if the sequence is self-contained, i.e., the positions of the letter in the sentence match the elements.
-
         :return: True if the sequence is self-contained, False otherwise.
         """
         return self.get_occurrences() == set(self.elements)
@@ -215,7 +204,6 @@ class AronsonSequence:
         """
         Checks if substring up to the largest ordinal is complete, i.e.,
         the positions of the letter in the sentence match the elements.
-
         :return: True if the sequence is prefix-complete, False otherwise.
         """
         return self.get_occurrences(idx=self.prefix) == set(self.elements)
@@ -234,7 +222,6 @@ class AronsonSequence:
     def is_correct(self):
         """
         Verifies if the sequence is valid by checking if all elements occur at the correct positions.
-
         :return: True if the sequence is valid, False otherwise.
         """
         return all(ind in self.get_occurrences() for ind in self.elements)
@@ -242,12 +229,11 @@ class AronsonSequence:
     def is_monotonic(self):
         """
         Check if sequence is monotonically increasing or decreasing.
-
         :return: (True, X) if the sequence is monotonic, else (False, None).
         More specifically: X = +/- 1 depending on direction
         """
         if len(self.elements) < 2:
-            # trivial
+            # None is trivial monotonic type
             return True, None
         op_dict = {operator.lt: 1, operator.gt: -1}
         for op, direction in op_dict.items():
@@ -260,7 +246,6 @@ class AronsonSequence:
     def set_elements(self, new_elements: list[int] = None, append=False):
         """
         Setter for the elements of the sequence. Updates the sentence, sentence_repr, and refer_dict.
-
         :param new_elements: The new elements for the sequence.
         :param append: Whether to append or replace elements.
         """
@@ -287,7 +272,6 @@ class AronsonSequence:
     def append_elements(self, new_elements: list[int]):
         """
         Wrapper function to append new elements to the sequence.
-
         :param new_elements: A list of new elements to append.
         """
         self.set_elements(new_elements, append=True)
@@ -299,47 +283,33 @@ class AronsonSequence:
     def set_letter(self, letter):
         """
         Sets the letter for the sequence and updates the sentence accordingly.
-
         :param letter: The new letter to set for the sequence.
         """
         self.check_letter(letter)
         self.letter = letter.lower()
-        # need to update sentence
+        # need to update sentence-related fields
         self._update_sentence()
 
     def flip_direction(self):
         """
         Flips the direction of the sequence
-
         Updates the sentence accordingly.
         """
         self.direction = self.direction.flip
-        # need to update sentence
+        # need to update sentence-related fields
         self._update_sentence()
 
     # getters
-    def get_range(self, elem):
-        """
-        given an element, if it is within the sequence, the position of the ordinal representation of the element
-        with the sentence is returned as a range
-        :param elem: to be checked
-        :return: range within which the ordinal representation of this element appears in the sentence
-        """
-        if elem not in self.refer_dict.keys():
-            raise ValueError("Element not in sequence")
-        idx_range, _ = self.refer_dict[elem]
-        return idx_range
 
     def get_reference(self, elem):
         """
         given an element, if it is within the sequence, return the reference type
         :param elem: to be checked
-        :return: reference type of element
+        :return: tuple of types (range, refer type)
         """
         if elem not in self.refer_dict.keys():
             raise ValueError("Element not in sequence")
-        _, ref = self.refer_dict[elem]
-        return ref
+        return self.refer_dict[elem]
 
     def get_letter(self):
         """
@@ -350,7 +320,6 @@ class AronsonSequence:
     def get_sentence(self):
         """
         Getter for the string representation of the sequence.
-
         :return: The string representation of the sequence.
         """
         return self.sentence
@@ -358,7 +327,6 @@ class AronsonSequence:
     def get_direction(self):
         """
         Getter for the direction of the sequence
-
         :return: Direction.
         """
         return self.direction
@@ -366,7 +334,6 @@ class AronsonSequence:
     def get_elements(self):
         """
         Getter for the elements of the sequence.
-
         :return: The elements of the sequence.
         """
         return self.elements
@@ -374,7 +341,6 @@ class AronsonSequence:
     def get_refer_dict(self):
         """
         Getter for the referral dictionary.
-
         :return: The referral dictionary.
         """
         return self.refer_dict
@@ -382,39 +348,49 @@ class AronsonSequence:
     def get_prefix(self):
         """
         Getter for the prefix.
-
         :return: The referral dictionary.
         """
         return self.prefix
 
     # operator overloading
-    def __add__(self, other: 'AronsonSequence'):
+    def __add__(self, other):
         """
-         + operator
-        :param other: sequence
-        :return: other.elements appended to self.elements
+        + operator: returns a new sequence with appended elements.
+        Supports AronsonSequence, int, or list[int].
         """
-        if self.display_letter != other.get_letter() or self.direction != other.get_direction():
-            raise ValueError("Letter and direction must be the same")
         new_seq = self.copy()
-        new_seq.append_elements(other.get_elements())
+        new_seq._append_flexible(other)
         return new_seq
 
-    def __iadd__(self, other: 'AronsonSequence'):
+    def __iadd__(self, other):
         """
-         += operator
-        :param other: sequence
-        :return: self with elements of other appended
+        += operator: appends elements to the current sequence.
         """
-        if self.display_letter != other.get_letter() or self.direction != other.get_direction():
-            raise ValueError("Letter and direction must be the same")
-        self.append_elements(other.get_elements())
+        self._append_flexible(other)
         return self
+
+    def _append_flexible(self, other):
+        """
+        Internal method to append various types to the sequence.
+        """
+        if isinstance(other, AronsonSequence):
+            if self.display_letter != other.get_letter() or self.direction != other.get_direction():
+                raise ValueError("Letter and direction must be the same")
+            self.append_elements(other.get_elements())
+
+        elif isinstance(other, int):
+            self.append_elements([other])
+
+        elif isinstance(other, list):
+            self.check_elements(other)
+            self.append_elements(other)
+
+        else:
+            raise TypeError("Unsupported operand type for +")
 
     def __repr__(self):
         """
         repr()/str() operator
-
         :return: The human-readable string representation of the sequence.
         """
 
@@ -428,7 +404,6 @@ class AronsonSequence:
     def __eq__(self, other):
         """
         = operator, Compares two Aronson sequences for equality based on letter, elements, and direction.
-
         :param other: The other AronsonSequence to compare with.
         :return: True if the sequences are equal, False otherwise.
         """
@@ -450,7 +425,6 @@ class AronsonSequence:
         """
         hash() operator, returns a hash value for the AronsonSequence object based on its letter, elements,
         and direction.
-
         :return: A hash value for the sequence.
         """
         return hash((tuple(self.elements), self.letter, self.direction))
@@ -458,7 +432,6 @@ class AronsonSequence:
     def __iter__(self):
         """
         for operator, returns an iterator over the elements of the sequence.
-
         :return: An iterator for the elements.
         """
         return iter(self.elements)
@@ -470,7 +443,6 @@ class AronsonSequence:
     def __len__(self):
         """
         len() operator, returns the length of the Aronson sequence (i.e., the number of elements).
-
         :return: The length of the Aronson sequence.
         """
         return len(self.elements)
@@ -485,7 +457,6 @@ class AronsonSequence:
     def __getitem__(self, index: int):
         """
         [] operator, returns the element at a specified position in the Aronson sequence.
-
         :param index: The index position to retrieve.
         :return: The element at the specified position.
         """

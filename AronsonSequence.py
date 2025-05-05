@@ -60,7 +60,7 @@ class AronsonSequence:
         """
         if n not in cls.num2words_dict:
             os = num2words(n, ordinal=True)
-            # tuple of stripped and full representations
+            # tuple: (original, stripped)
             cls.num2words_dict[n] = (os, os.replace(" and", "").replace(", ", "").replace(" ", "").replace("-", ""))
         return cls.num2words_dict[n][0] if not stripped else cls.num2words_dict[n][1]
 
@@ -80,15 +80,13 @@ class AronsonSequence:
 
         # Deduplicate while preserving order
         seen = set()
-        # trick- way to add element to set within comprehension
         self.elements = [x for x in elements if not (x in seen or seen.add(x))]
         self.prefix = max(self.elements) if self.elements else 0
 
         self.letter = letter.lower()
         self.direction = direction
-        # build strings
+        # build strings (can be made a single method?)
         self._update_sentence()
-        self._update_refer_dict()
 
     @property
     def display_letter(self):
@@ -128,16 +126,25 @@ class AronsonSequence:
         if not isinstance(letter, str) or len(letter) != 1 or not letter.isalpha():
             raise ValueError(f"Invalid letter: {letter!r}. Must be a single alphabetic character.")
 
-    def _update_sentence(self):
+    def _update_sentence(self, elements=None):
         """
-        Updates the string representation of the sequence and its sanitized form.
+        Updates the string representation of the sequence, its sanitized form, occurrence set,
+        and optionally builds or updates the referral dictionary.
 
-        This method constructs the `sentence_repr` and the `sentence` attributes.
+        :param elements: Optional iterable of new elements to update in refer_dict;
+                         if None, rebuild refer_dict from scratch using self.elements.
         """
         self.sentence_repr = self._build_sentence_repr()
         self.sentence = self.sentence_repr.replace(", ", "").replace(" ", "").replace("-", "")
         s = self.sentence if self.direction == Direction.FORWARD else self.sentence[::-1]
         self.occurrences = {i + 1 for i, char in enumerate(s) if char == self.letter}
+
+        target_elements = self.elements if elements is None else elements
+        updates = {x: self._set_refer_val(x) for x in target_elements}
+        if elements is None:
+            self.refer_dict = updates
+        else:
+            self.refer_dict.update(updates)
 
     def _build_sentence_repr(self):
         """
@@ -171,20 +178,6 @@ class AronsonSequence:
             ref = Refer.FORWARD
         # return position of ordinal within string representation as a tuple.
         return range(pos, end), ref
-
-    def _update_refer_dict(self, elements=None):
-        """
-        Builds or updates the referral dictionary that maps each element to its corresponding referral type.
-
-        :param elements: Optional iterable of new elements to update; if None, uses self.elements to build from scratch.
-        """
-        target_elements = self.elements if elements is None else elements
-        updates = {x: self._set_refer_val(x) for x in target_elements}
-
-        if elements is None:
-            self.refer_dict = updates
-        else:
-            self.refer_dict.update(updates)
 
     def has_forward_ref(self):
         """
@@ -273,25 +266,23 @@ class AronsonSequence:
         """
         new_elements = new_elements if new_elements is not None else []
         self.check_elements(new_elements)
+        seen = set()
+
         if append:
-            if not new_elements:
+            # ignore repeating elements
+            filtered = [x for x in new_elements if not (x in seen or seen.add(x) or x in self.refer_dict.keys())]
+            if not filtered:
                 # do nothing
                 return
-            seen = set()
-            # ignore repeating elements
-            filtered = [x for x in new_elements if
-                        x not in seen and not seen.add(x) and x not in self.refer_dict.keys()]
             self.elements.extend(filtered)
-            # should use partial mode here, fails tests
-            # self._update_refer_dict(filtered)
 
         else:
             # Replace elements
-            self.elements = new_elements
+            self.elements = [x for x in new_elements if not (x in seen or seen.add(x))]
 
+        # Reduced computation if appending
+        self._update_sentence(new_elements if append else None)
         self.prefix = max(self.elements) if self.elements else 0
-        self._update_sentence()
-        self._update_refer_dict()
 
     def append_elements(self, new_elements: list[int]):
         """

@@ -1,6 +1,6 @@
 # Aronson Sequence Generator
 
-![Tests](https://img.shields.io/badge/tests-90%25%20coverage-green)
+![Tests](https://img.shields.io/badge/tests-95%25%20coverage-green)
 
 A Python implementation of two classes representing self-referential sentences (`AronsonSequence`), and collections thereof (`AronsonSet`). 
 

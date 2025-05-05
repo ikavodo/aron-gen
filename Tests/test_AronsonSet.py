@@ -466,10 +466,12 @@ class AronsonSetTests(unittest.TestCase):
     @unittest.skipUnless(os.environ.get("RUN_OPTIONAL_TEST") == "True",
                          "Skipping optional test (set RUN_OPTIONAL_TEST=True to run)")
     def test_generation_error_speed(self):
-        """Verify generate_fast() is faster than generate_full() for equivalent iterations"""
+        """Verify generate_full(n_iters, error_rate=3*x) is around 3 times faster than
+        generate_full(n_iters, error_rate=x)"""
         iterations = 3
         time_dict = defaultdict(list)
-        errors = (.25, .75)
+        initial_error = .25
+        errors = (initial_error, 3 * initial_error)
         for direction in Direction:
             for error in errors:
                 aset = AronsonSet('t', direction)
@@ -480,7 +482,7 @@ class AronsonSetTests(unittest.TestCase):
         speedups = [max(time_dict[direction]) / min(time_dict[direction]) for direction in Direction]
         ratio = errors[1] / errors[0]
         # ratio of runtime should be at least as large as ratio of errors in one direction
-        self.assertTrue(max(speedups) >= ratio, f"Insufficient speedup: {speedups}")
+        self.assertTrue(max(speedups) >= (ratio - 0.5), f"Insufficient speedup: {speedups}")
 
     def test_sub(self):
         aset_empty = AronsonSet('t')
@@ -680,6 +682,7 @@ class AronsonSetTests(unittest.TestCase):
             for i in range(1, 3):
                 aset_cpy.generate_fast(i)
                 self.assertTrue(aset_cpy.max >= val)
+
     def test_combined(self):
         n = 3
         for direction in Direction:

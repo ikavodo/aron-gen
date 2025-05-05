@@ -462,6 +462,15 @@ class AronsonSequenceTests(unittest.TestCase):
         # make sure display_letter() method works as expected
         self.assertNotEqual(seq.get_letter(), 't')
 
+    def test_get_occurrences(self):
+        ground_truths = [{1, 4, 9, 10}, {3, 4, 9, 12}]
+        for truth, direction in zip(ground_truths, Direction):
+            emp_seq = AronsonSequence('t', [], direction)
+            self.assertEqual(emp_seq.get_occurrences(), truth)
+            seq = AronsonSequence('t', [1], direction)
+            target = {1} if direction == Direction.FORWARD else set()
+            self.assertEqual(seq.get_occurrences(1), target)
+
     def test_index(self):
         for direction, elems in zip(Direction, [[1, 4, 11], [3, 4, 11]]):
             seq = AronsonSequence('t', [], direction)

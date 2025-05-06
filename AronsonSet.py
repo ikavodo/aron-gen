@@ -127,7 +127,7 @@ class AronsonSet:
             # Safety measure
             raise ValueError("Dictionary must hold non-empty value")
 
-        # error checking unnecessary- helper method
+        # error checking
         field_set = {(s.get_letter(), s.get_direction()) for sets in iter_dict.values() for s in sets}
 
         if len(field_set) > 1:
@@ -371,7 +371,7 @@ class AronsonSet:
                 metric = max(x - mean for x in current_perm)
                 upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key])
                 if max_len >= 4 and error_rate <= 1e-3:
-                    # misses a few sequences of length 4
+                    # misses ~3e-4 percent of sequences of length 4
                     upper_metric_bound += 1
 
                 if metric <= (1 - error_rate) * upper_metric_bound:
@@ -457,7 +457,7 @@ class AronsonSet:
             results.update(self.backward_generate(1, seq))
         return results
 
-    # Filters always include the empty_set (change this at some point if necessary).
+    # Filters
     def filter_elements(self, elems):
         """
         return all seen sequences containing elements
@@ -492,33 +492,6 @@ class AronsonSet:
                     # Perhaps not all permutations generated within same iteration
                     filtered[n_iter].add(seq)
         return AronsonSet.from_dict(filtered)
-
-    def find_non_elements(self, n_iter=None):
-        """
-        Find all elements up to maximum element in set which do not appear in any sequence
-        :param n_iter: to look within
-        :return: elements
-        """
-        if n_iter is not None and (n_iter < 0 or n_iter > self.cur_iter):
-            raise ValueError("must choose correct iteration")
-
-        if len(self.seen_seqs) == 1:
-            # trivially empty
-            return set()
-
-        search_set = self.iter_dict[n_iter] if n_iter is not None else self.seen_seqs
-        seen_elems = {elem for seq in search_set for elem in seq}
-        # set has at least one non-empty sequence-> max is defined
-        return set(range(1, self.max)) - seen_elems
-
-    def get_elements(self):
-        """ get all elements appearing within a given sequence within the set"""
-        return {elem for seq in self.seen_seqs for elem in seq}
-
-    def get_unique_element_sequences(self, other: 'AronsonSet'):
-        """ Get all sequences holding elements not appearing in any sequence in another set"""
-        missing_elements = self.get_elements() - other.get_elements()
-        return {seq for seq in self.seen_seqs if any(elem in seq for elem in missing_elements)}
 
     def filter_refs(self, refs):
         """
@@ -559,6 +532,33 @@ class AronsonSet:
                 filtered.add(seq)
         return AronsonSet.from_set(filtered)
 
+    def find_non_elements(self, n_iter=None):
+        """
+        Find all elements up to maximum element in set which do not appear in any sequence
+        :param n_iter: to look within
+        :return: elements
+        """
+        if n_iter is not None and (n_iter < 0 or n_iter > self.cur_iter):
+            raise ValueError("must choose correct iteration")
+
+        if len(self.seen_seqs) == 1:
+            # trivially empty
+            return set()
+
+        search_set = self.iter_dict[n_iter] if n_iter is not None else self.seen_seqs
+        seen_elems = {elem for seq in search_set for elem in seq}
+        # set has at least one non-empty sequence-> max is defined
+        return set(range(1, self.max)) - seen_elems
+
+    def get_elements(self):
+        """ get all elements appearing within a given sequence within the set"""
+        return {elem for seq in self.seen_seqs for elem in seq}
+
+    def get_unique_element_sequences(self, other: 'AronsonSet'):
+        """ Get all sequences holding elements not appearing in any sequence in another set"""
+        missing_elements = self.get_elements() - other.get_elements()
+        return {seq for seq in self.seen_seqs if any(elem in seq for elem in missing_elements)}
+
     # Utility methods
     def copy(self):
         """ shallow copy for new instance"""
@@ -588,13 +588,8 @@ class AronsonSet:
             # flip empty seq direction
             seq.flip_direction()
 
-    def _set_operation_core(
-            self: 'AronsonSet',
-            other: 'AronsonSet',
-            set_op: Callable[[set, set], set],
-            n: int = 0,
-            error_rate=0.0
-    ) -> 'AronsonSet':
+    def _set_operation_core(self: 'AronsonSet', other: 'AronsonSet', set_op: Callable[[set, set], set], n: int = 0,
+                            error_rate=0.0):
         """
         Core logic for set operations on AronsonSets.
         """
@@ -611,7 +606,7 @@ class AronsonSet:
         set1.generate_full(n, error_rate)
         set2.generate_full(n, error_rate)
 
-        # Apply set operation on tuple representations (because AronsonSequence is unhashable or mutable)
+        # Apply set operation on tuple representations (AronsonSequence equality depends on direction)
         op_result = set_op(
             {tuple(seq.get_elements()) for seq in set1},
             {tuple(seq.get_elements()) for seq in set2}
@@ -622,6 +617,7 @@ class AronsonSet:
 
         for elements in op_result:
             seq = AronsonSequence(self.letter, list(elements), self.direction)
+            # write sequence in set corresponding to minimum generation iteration
             gen_iter = min(first_seen(seq, set1), first_seen(seq, set2))
             new_iter_dict[gen_iter].add(seq)
 
@@ -647,7 +643,7 @@ class AronsonSet:
         return self.direction
 
     def peek(self):
-        """ Recover an arbitrary sequence from seen sequences. Use """
+        """ Recover an arbitrary sequence from seen sequences"""
         return next(iter(self.seen_seqs))
 
     def discard(self, seq: AronsonSequence):
@@ -746,7 +742,7 @@ class AronsonSet:
         :param n: generation iterations
         :return: set instance
         """
-        # take difference with intersection (which has same direction) if directions not aligned
+        # take difference with intersection (which has same direction) if directions not the same
         if self.direction == other.direction:
             result = self._set_operation_core(other, set.difference, n, error_rate)
         else:

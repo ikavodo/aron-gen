@@ -56,10 +56,10 @@ aset2.is_correct(seq1) # False, sequence is incorrect w.r.t. set direction
 ### Hybrid Generation
 ```python
 aset = AronsonSet('t', Direction.BACKWARD)
-aset.generate_full(2) # Exhaustive search
+aset.generate_full(2) # Exhaustively generate all correct AronsonSequences up to length 2
 len(aset) # 67
 aset_cpy = aset.copy()
-aset.generate_fast(3, forward_generate=True)  # Optimized continuation
+aset.generate_fast(3, forward_generate=True)  # Optimized continuation to sequences of length 3
 len(aset) # 198
 aset_cpy.generate_full(3, error_rate = 0.25) # Find at least 75% of all correct sequences
 len(aset_cpy) # 843 (out of 955)
@@ -88,7 +88,7 @@ assert(difference_set == set1) # sets are complementary
 aset = AronsonSet('t')
 n_iters = 2
 aset.generate_full(n_iters)
-filter1 = aset.filter_symmetric(n_iters) # get sequences for which all permutations also in set
+filter1 = aset.filter_symmetric(n_iters) # get length-2 sequences for which all permutations also in set
 filter2 = filter1.filter_elements({filter1.max}) # get all such sequences containing maximum element
 [seq for seq in filter2 if not seq.is_empty()]
 # ["T is the thirty-second, thirty-third letter in this sentence, not counting commas and spaces",

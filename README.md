@@ -90,7 +90,7 @@ n_iters = 2
 aset.generate_full(n_iters)
 len(aset) # 73 
 filter1 = aset.filter_symmetric(n_iters) # get length-2 sequences for which all permutations also in set
-filter2 = filter1.filter_elements({filter1.max}) # get all such sequences containing maximum element
+filter2 = filter1.filter_elements(filter1.max) # get all such sequences containing maximum element
 [seq for seq in filter2 if not seq.is_empty()]
 # ["T is the thirty-second, thirty-third letter in this sentence, not counting commas and spaces",
 # "T is the thirty-third, thirty-second letter in this sentence, not counting commas and spaces"]

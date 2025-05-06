@@ -1,7 +1,7 @@
 from itertools import islice, combinations, permutations
 from math import log2, ceil
 
-from AronsonSequence import AronsonSequence, Direction, LEN_PREFIX, LEN_SUFFIX
+from AronsonSequence import AronsonSequence, Direction, Refer, LEN_PREFIX, LEN_SUFFIX
 from collections import defaultdict, Counter
 from typing import Callable, Literal
 from functools import reduce
@@ -465,11 +465,16 @@ class AronsonSet:
         :return: set of seen sequences including elems
 
         """
-        if not isinstance(elems, set):
-            raise ValueError("input argument must be a set")
-        # retain iteration information in dictionary
-        filtered = {n_iter: {seq for seq in seqs if all(elem in seq for elem in elems)} for n_iter, seqs in
-                    self.iter_dict.items()}
+        if isinstance(elems, int):
+            elems = {elems}
+        elif isinstance(elems, list):
+            elems = set(elems)
+        elif not isinstance(elems, set):
+            raise ValueError("Input must be an integer, list, or set")
+        filtered = {
+            n_iter: {seq for seq in seqs if elems.issubset(seq)}
+            for n_iter, seqs in self.iter_dict.items()
+        }
         return AronsonSet.from_dict(filtered)
 
     def filter_symmetric(self, seq_len=0):
@@ -515,22 +520,28 @@ class AronsonSet:
         missing_elements = self.get_elements() - other.get_elements()
         return {seq for seq in self.seen_seqs if any(elem in seq for elem in missing_elements)}
 
-    def filter_refs(self, refs: set[Direction]):
+    def filter_refs(self, refs):
         """
         return all seen sequences including elements with reference pointers in the set refs
         :param refs: pointers for elements in sequence
         :return: set of seen sequences including refs
 
         """
-        if not isinstance(refs, set):
-            raise ValueError("input argument must be a set")
-        filtered: dict[int: set[AronsonSequence]] = defaultdict(set[AronsonSequence])
+        if isinstance(refs, list):
+            refs = set(refs)
+        elif isinstance(refs, Refer):
+            refs = {refs}
+        elif not isinstance(refs, set):
+            raise ValueError("input argument must be iterable or a Direction type")
+
+        filtered = defaultdict(set)
+
         for n_iter, seqs in self.iter_dict.items():
             for seq in seqs:
-                # more readable
-                cur_refs = {ref[1] for ref in seq.get_refer_dict().values()}
-                if refs.issubset(cur_refs):
+                current_refs = {ref[1] for ref in seq.get_refer_dict().values()}
+                if refs.issubset(current_refs):
                     filtered[n_iter].add(seq)
+
         return AronsonSet.from_dict(filtered)
 
     def filter_monotonic(self, ascending=True):
@@ -645,7 +656,7 @@ class AronsonSet:
         :param seq: to be discarded
         :return: None
         """
-        # no error checking- discard does nothing if seq is misaligned w.r.t. direction or letter
+        # no error-checking: discard does nothing if seq is misaligned w.r.t. direction or letter
         for seqs in self.iter_dict.values():
             seqs.discard(seq)
         self.get_seen_seqs().discard(seq)

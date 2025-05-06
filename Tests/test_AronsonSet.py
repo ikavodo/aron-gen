@@ -596,7 +596,7 @@ class AronsonSetTests(unittest.TestCase):
             aset.generate_full(2)
             first = 1 if direction == Direction.FORWARD else 3
             valid_continuations = {AronsonSequence('t', [first, p], direction) for p in elems}
-            filtered = aset.filter_elements({first})
+            filtered = aset.filter_elements(first)
             self.assertTrue(len(filtered) >= 2)
             for continuation in valid_continuations:
                 self.assertIn(continuation, filtered)
@@ -607,7 +607,7 @@ class AronsonSetTests(unittest.TestCase):
             aset = AronsonSet('t', direction)
             aset.generate_full(1)
             for elem, ref in zip(elems, list(Refer)):
-                filtered = aset.filter_refs({ref})
+                filtered = aset.filter_refs(ref)
                 self.assertTrue(len(filtered) > len(elem))
                 for e in elem:
                     self.assertIn(AronsonSequence('t', [e], direction), filtered)

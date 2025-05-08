@@ -1,5 +1,5 @@
 # Elements corresponding to all Aronson sequences of length up to 3
-forward_elems = [
+FORWARD_ELEMS = [
     [1, 24, 28],
     [10, 15, 37],
     [10, 17, 1],
@@ -956,7 +956,7 @@ forward_elems = [
     [24, 17, 40],
     [40, 35, 26]]
 
-backward_elems = [
+BACKWARD_ELEMS = [
     [33, 13],
     [8, 4, 37],
     [4, 31, 3],

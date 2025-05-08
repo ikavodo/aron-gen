@@ -369,10 +369,7 @@ class AronsonSet:
             if len(current_perm) == max_len:
                 mean = current_sum / max_len
                 metric = max(x - mean for x in current_perm)
-                upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key])
-                if max_len >= 4 and error_rate <= 1e-3:
-                    # misses ~3e-4 percent of sequences of length 4
-                    upper_metric_bound += 1
+                upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key]) + 1
 
                 if metric <= (1 - error_rate) * upper_metric_bound:
                     # don't allow outliers
@@ -380,10 +377,12 @@ class AronsonSet:
                 return
 
             for elem in remaining:
+                rem_cpy = remaining.copy()
                 if is_valid_extension(elem, current_perm):
                     current_perm.append(elem)
-                    remaining.remove(elem)
-                    yield from backtrack(current_perm, current_sum + elem, remaining, max_len)
+                    rem_cpy.remove(elem)
+                    yield from backtrack(current_perm, current_sum + elem, rem_cpy, max_len)
+                    # this code seems to be the problem, it doesn't add remaining after popping in
                     remaining.add(current_perm.pop())
 
         if n_iterations <= 0:

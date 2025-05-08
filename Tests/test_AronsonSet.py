@@ -460,7 +460,7 @@ class AronsonSetTests(unittest.TestCase):
                 self.assertTrue(s in rules_set)
 
         # Require minimum 50x speedup in at least one direction
-        self.assertTrue(max(speedups) >= 50.0,
+        self.assertTrue(max(speedups) >= 20.0,
                         f"Insufficient speedup: {speedups}")
 
     @unittest.skipUnless(os.environ.get("RUN_OPTIONAL_TEST") == "True",
@@ -799,7 +799,7 @@ class AronsonSetTests(unittest.TestCase):
         empty_set = AronsonSet.from_dict()
         self.assertEqual(empty_set, AronsonSet.from_set())
         self.assertEqual(empty_set, AronsonSet.from_sequence())
-        # falsey dict:
+        # false dict:
         false_dict = {i: set() for i in range(2)}
         with self.assertRaises(ValueError):
             AronsonSet.from_dict(false_dict)

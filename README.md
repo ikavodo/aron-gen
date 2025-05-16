@@ -41,6 +41,7 @@ Models self-referential sentences with:
 
 ```python
 # Create and validate sequence
+from aron_gen.core import AronsonSequence
 letter = 't'
 aronson_initial = [1, 4, 11] # first three terms in Aronson's sequence
 seq1 = AronsonSequence(letter, aronson_initial) # Forward
@@ -61,6 +62,7 @@ Manages collections of valid sequences with:
 - Filter operations (by element/reference/symmetry)
 
 ```python
+'from aron_gen.core import AronsonSet
 # Generate and analyze sequences
 aset1 = AronsonSet('t', Direction.BACKWARD) # Backward
 empty_seq = aset1.peek() 
@@ -74,6 +76,7 @@ aset2.is_correct(seq1) # False, sequence is incorrect w.r.t. set direction
 ## Advanced Usage
 ### Hybrid Generation
 ```python
+'from aron_gen.core import AronsonSet
 aset = AronsonSet('t', Direction.BACKWARD)
 aset.generate_full(2) # Exhaustively generate all correct AronsonSequences up to length 2
 len(aset) # 67
@@ -87,6 +90,7 @@ len(aset_cpy) # 843 (out of 955)
 ### Set Operations
 ```python
 # Combine sequence sets
+'from aron_gen.core import AronsonSequence, AronsonSet
 seq1 = AronsonSequence('t', [1, 4, 11])
 seq2 = AronsonSequence('t', [10, 12])
 set1 = AronsonSet.from_sequence(seq1)
@@ -104,6 +108,7 @@ assert(difference_set == set1) # sets are complementary
 ### Filter Operations
 ```python
 # Extract AronsonSequence instances from an AronsonSet instance via filtering
+'from aron_gen.core import AronsonSet
 aset = AronsonSet('t')
 n_iters = 2
 aset.generate_full(n_iters)

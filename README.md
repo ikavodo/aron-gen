@@ -76,7 +76,6 @@ aset2.is_correct(seq1) # False, sequence is incorrect w.r.t. set direction
 ## Advanced Usage
 ### Hybrid Generation
 ```python
-'from aron_gen.core import AronsonSet
 aset = AronsonSet('t', Direction.BACKWARD)
 aset.generate_full(2) # Exhaustively generate all correct AronsonSequences up to length 2
 len(aset) # 67
@@ -108,7 +107,6 @@ assert(difference_set == set1) # sets are complementary
 ### Filter Operations
 ```python
 # Extract AronsonSequence instances from an AronsonSet instance via filtering
-'from aron_gen.core import AronsonSet
 aset = AronsonSet('t')
 n_iters = 2
 aset.generate_full(n_iters)

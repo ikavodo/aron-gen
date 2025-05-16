@@ -1,7 +1,6 @@
 from itertools import islice, combinations, permutations
 from math import log2, ceil
-
-from AronsonSequence import AronsonSequence, Direction, Refer, LEN_PREFIX, LEN_SUFFIX
+from .AronsonSequence import AronsonSequence, Direction, Refer, LEN_PREFIX, LEN_SUFFIX
 from collections import defaultdict, Counter
 from typing import Callable, Literal
 from functools import reduce

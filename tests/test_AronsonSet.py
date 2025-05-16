@@ -7,8 +7,8 @@ from collections import defaultdict
 from functools import reduce
 from itertools import combinations
 from num2words import num2words
-from src.AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE
-from src.AronsonSequence import AronsonSequence, Direction, Refer
+from aron_gen.core.AronsonSet import AronsonSet, GenError, VerificationError, ORD_TABLE
+from aron_gen.core.AronsonSequence import AronsonSequence, Direction, Refer
 
 
 def n2w(n):

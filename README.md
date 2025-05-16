@@ -98,8 +98,8 @@ filter2 = filter1.filter_elements(filter1.max) # get all such sequences containi
 
 ## Installation
 ```bash
-git clone https://github.com/ikavodo/aronson-generator.git
-cd aronson-generator
+git clone https://github.com/ikavodo/aron-gen.git
+cd aron_gen
 pip install -r requirements.txt  # Requires num2words
 ```
 

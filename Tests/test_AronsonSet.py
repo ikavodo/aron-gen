@@ -824,6 +824,18 @@ class AronsonSetTests(unittest.TestCase):
             # compare iteration sets
             self.assertEqual(new_set[n_iter], empty_set[n_iter])
 
+    def test_is_empty(self):
+        for direction in Direction:
+            emp_set = AronsonSet('t', direction)
+            self.assertTrue(emp_set.is_empty())
+            emp_set.generate_full(1)
+            # non-empty
+            self.assertFalse(emp_set.is_empty())
+            # construct from single non-empty set
+            seq = AronsonSequence('t', [4], direction)
+            new_set = AronsonSet.from_sequence(seq)
+            self.assertFalse(new_set.is_empty())
+
 
 if __name__ == '__main__':
     unittest.main()

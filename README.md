@@ -89,7 +89,6 @@ len(aset_cpy) # 843 (out of 955)
 ### Set Operations
 ```python
 # Combine sequence sets
-from aron_gen.core import AronsonSequence, AronsonSet
 seq1 = AronsonSequence('t', [1, 4, 11])
 seq2 = AronsonSequence('t', [10, 12])
 set1 = AronsonSet.from_sequence(seq1)

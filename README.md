@@ -10,6 +10,25 @@ The  `AronsonSet` class constitutes a collection over `AronsonSequence` instance
 
 See [this blogpost](https://ikavodo.github.io/aronson-1/) for more details.
 
+
+---
+
+## 🔧 Installation
+
+### Clone and install in editable mode:
+
+```bash
+git clone https://github.com/ikavodo/aron_gen.git
+cd aron_gen
+pip install -e .
+```
+
+or as a standalone package via
+
+```bash
+pip install aron-gen .
+```
+
 ## Features
 
 ### `AronsonSequence` Class
@@ -94,13 +113,6 @@ filter2 = filter1.filter_elements(filter1.max) # get all such sequences containi
 [seq for seq in filter2 if not seq.is_empty()]
 # ["T is the thirty-second, thirty-third letter in this sentence, not counting commas and spaces",
 # "T is the thirty-third, thirty-second letter in this sentence, not counting commas and spaces"]
-```
-
-## Installation
-```bash
-git clone https://github.com/ikavodo/aron-gen.git
-cd aron_gen
-pip install -r requirements.txt  # Requires num2words
 ```
 
 ### Testing Framework

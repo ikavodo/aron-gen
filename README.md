@@ -62,7 +62,7 @@ Manages collections of valid sequences with:
 - Filter operations (by element/reference/symmetry)
 
 ```python
-'from aron_gen.core import AronsonSet
+from aron_gen.core import AronsonSet
 # Generate and analyze sequences
 aset1 = AronsonSet('t', Direction.BACKWARD) # Backward
 empty_seq = aset1.peek() 
@@ -89,7 +89,7 @@ len(aset_cpy) # 843 (out of 955)
 ### Set Operations
 ```python
 # Combine sequence sets
-'from aron_gen.core import AronsonSequence, AronsonSet
+from aron_gen.core import AronsonSequence, AronsonSet
 seq1 = AronsonSequence('t', [1, 4, 11])
 seq2 = AronsonSequence('t', [10, 12])
 set1 = AronsonSet.from_sequence(seq1)

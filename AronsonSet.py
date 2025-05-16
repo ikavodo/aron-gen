@@ -558,6 +558,10 @@ class AronsonSet:
         missing_elements = self.get_elements() - other.get_elements()
         return {seq for seq in self.seen_seqs if any(elem in seq for elem in missing_elements)}
 
+    def is_empty(self):
+        return len(self.seen_seqs) == 1 and self.seen_seqs == {AronsonSequence(self.get_letter(), [],
+                                                                               self.direction)}
+
     # Utility methods
     def copy(self):
         """ shallow copy for new instance"""

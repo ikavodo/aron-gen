@@ -4,7 +4,7 @@ import os
 from AronsonSet import AronsonSet, Direction
 
 def main(n):
-    os.makedirs('data', exist_ok=True)
+    os.makedirs('../data', exist_ok=True)
 
     directions = [
         (Direction.FORWARD, 'forward'),
@@ -31,7 +31,7 @@ def main(n):
             elements[dir_key] = dir_elements
             stats[dir_key][iter_num] = len(aset[iter_num]) + (0 if not iter_num else stats[dir_key][iter_num-1])
 
-    with open('data/ground_truth_seqs.py', 'w') as f:
+    with open('../data/ground_truth_seqs.py', 'w') as f:
         f.write("# Elements corresponding to all Aronson sequences of length up to n\n")
         f.write(f"forward_elems = [\n")
         for elem in elements['forward']:
@@ -43,7 +43,7 @@ def main(n):
         f.write("]\n")
 
     # Write ground_truth_stats.py
-    with open('data/ground_truth_stats.py', 'w') as f:
+    with open('../data/ground_truth_stats.py', 'w') as f:
         f.write("# Ground truth for number of sets per iteration:\n")
         for dir_key in ['forward', 'backward']:
             f.write(f"# Direction.{dir_key.upper()}\n")

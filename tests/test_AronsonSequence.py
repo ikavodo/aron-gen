@@ -2,7 +2,7 @@ import unittest
 from itertools import permutations
 
 from num2words import num2words
-from AronsonSequence import AronsonSequence, PREFIX, SUFFIX, Refer, Direction, REPR_FORWARD, \
+from src.AronsonSequence import AronsonSequence, PREFIX, SUFFIX, Refer, Direction, REPR_FORWARD, \
     REPR_BACKWARD, LEN_PREFIX, LEN_SUFFIX
 
 

@@ -835,6 +835,10 @@ class AronsonSetTests(unittest.TestCase):
             seq = AronsonSequence('t', [4], direction)
             new_set = AronsonSet.from_sequence(seq)
             self.assertFalse(new_set.is_empty())
+            # sanity check
+            new_cpy = new_set.copy()
+            new_set -= new_cpy
+            self.assertTrue(new_set.is_empty())
 
 
 if __name__ == '__main__':

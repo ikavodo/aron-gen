@@ -26,7 +26,7 @@ pip install -e .
 or as a standalone package via
 
 ```bash
-pip install aron-gen .
+pip install aron-gen
 ```
 
 ## Features

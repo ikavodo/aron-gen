@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/aronson-generator.iml" filepath="$PROJECT_DIR$/.idea/aronson-generator.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/aron_gen.iml" filepath="$PROJECT_DIR$/.idea/aron_gen.iml" />
     </modules>
   </component>
 </project>

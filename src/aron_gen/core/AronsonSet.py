@@ -10,6 +10,8 @@ from contextlib import suppress
 ORD_TABLE = {i + 1: j for i, j in enumerate([7, 14, 26, 39, 45, 56, 69, 75, 87, 99])}
 # initial key for maximum ordinal length
 ORD_INITIAL = 2
+# for n_iters > 4 don't prune, as don't know enough at this point
+PRUNE_THRESH = 4
 
 
 # Exception classes
@@ -356,33 +358,29 @@ class AronsonSet:
                 return False
             return True
 
-        def backtrack(current_perm, current_sum, remaining, max_len):
-            """
-            helper for looking over potential sequences
-            :param current_perm: input to add to
-            :param current_sum: ongoing computation of metric
-            :param remaining: elements to add
-            :param max_len: of generation
-            :return: None
-            """
+        def backtrack(current_perm, current_sum, remaining, max_len, error_rate=0.0):
             if len(current_perm) == max_len:
+                if max_len > PRUNE_THRESH:
+                    yield current_perm.copy()
+                    return
+
                 mean = current_sum / max_len
                 metric = max(x - mean for x in current_perm)
-                upper_metric_bound = ceil(log2(len(current_perm)) * ORD_TABLE[cur_ord_key]) + 1
+                upper_bound = ceil(log2(max_len) * ORD_TABLE[cur_ord_key]) + 1
 
-                if metric <= (1 - error_rate) * upper_metric_bound:
-                    # don't allow outliers
+                if metric <= (1 - error_rate) * upper_bound:
                     yield current_perm.copy()
                 return
 
-            for elem in remaining:
-                rem_cpy = remaining.copy()
+            for elem in set(remaining):
                 if is_valid_extension(elem, current_perm):
-                    current_perm.append(elem)
-                    rem_cpy.remove(elem)
-                    yield from backtrack(current_perm, current_sum + elem, rem_cpy, max_len)
-                    # this code seems to be the problem, it doesn't add remaining after popping in
-                    remaining.add(current_perm.pop())
+                    yield from backtrack(
+                        current_perm + [elem],
+                        current_sum + elem,
+                        remaining - {elem},
+                        max_len,
+                        error_rate
+                    )
 
         if n_iterations <= 0:
             return
